@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Configuración</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+:root{--primary:#1b7a3d;--primary-d:#0f5c2a;--primary-l:#e8f5e9;--primary-xl:#f1f8f0;--accent:#e65100;--danger:#dc2626;--danger-l:#fee2e2;--warning:#d97706;--warning-l:#fef3c7;--blue:#1565c0;--blue-l:#e3f2fd;--bg:#f5f7fa;--white:#fff;--dark:#1a1a1a;--muted:#6b7280;--muted-l:#9ca3b0;--border:#e5e7eb;--border-l:#f0f0f0;--radius-sm:8px;--radius:12px;--radius-lg:16px;--radius-xl:20px;--shadow:0 2px 12px rgba(0,0,0,0.06);--shadow-h:0 8px 30px rgba(0,0,0,0.1);--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.settings-header{margin-bottom:28px}
+.settings-header h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px}
+.settings-header p{color:var(--muted);font-size:0.85rem;margin:0}
+.settings-toast{display:none;padding:12px 18px;border-radius:var(--radius);margin-bottom:20px;font-size:0.82rem;font-weight:500;align-items:center;gap:10px}
+.settings-toast.show{display:flex}
+.settings-toast.success{background:var(--primary-xl);border:1px solid #c8e0ce;color:var(--primary-d)}
+.settings-toast.error{background:var(--danger-l);border:1px solid #fecaca;color:var(--danger)}
+.settings-tabs{display:flex;gap:4px;margin-bottom:28px;flex-wrap:wrap;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:6px}
+.settings-tab{padding:10px 16px;border-radius:var(--radius-sm);font-size:0.8rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:transparent;font-family:var(--font);display:flex;align-items:center;gap:8px}
+.settings-tab:hover{background:var(--bg);color:var(--dark)}
+.settings-tab.active{background:var(--primary-l);color:var(--primary-d);font-weight:600}
+.settings-tab i{font-size:0.85rem}
+.settings-section{display:none}
+.settings-section.active{display:block}
+.settings-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.settings-card .sc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.settings-card .sc-hdr h5{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px;margin:0}
+.settings-card .sc-hdr h5 i{color:var(--primary)}
+.settings-card .sc-sub{font-size:0.82rem;color:var(--muted);margin-bottom:18px;line-height:1.6}
+.settings-form{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.settings-form .sf-group{display:flex;flex-direction:column;gap:4px}
+.settings-form .sf-group label{font-size:0.78rem;font-weight:600;color:var(--muted)}
+.settings-form .sf-group input,.settings-form .sf-group select{width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--font);font-size:0.85rem;outline:none;background:var(--white);transition:border-color .2s;color:var(--dark);appearance:none}
+.settings-form .sf-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.settings-form .sf-group input:focus,.settings-form .sf-group select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+.avatar-upload{display:flex;align-items:center;gap:20px;margin-bottom:18px}
+.avatar-upload .au-circle{width:72px;height:72px;border-radius:50%;background:var(--primary-l);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:3px solid var(--primary);flex-shrink:0}
+.avatar-upload .au-info{flex:1}
+.avatar-upload .au-info .au-name{font-weight:700;font-size:1rem}
+.avatar-upload .au-info .au-email{font-size:0.82rem;color:var(--muted)}
+.avatar-upload .au-info .au-date{font-size:0.75rem;color:var(--muted-l);margin-top:2px}
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-l);gap:12px}
+.switch-row:last-child{border-bottom:none}
+.switch-row .sr-info{flex:1;min-width:0}
+.switch-row .sr-info strong{display:block;font-size:0.85rem;font-weight:600}
+.switch-row .sr-info span{font-size:0.78rem;color:var(--muted)}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{position:absolute;cursor:pointer;inset:0;background:#d1d5db;border-radius:24px;transition:.3s}
+.switch .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+.switch input:checked+.slider{background:var(--primary)}
+.switch input:checked+.slider::before{transform:translateX(20px)}
+.security-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-l);gap:12px}
+.security-item:last-child{border-bottom:none}
+.security-item .seci-left{flex:1}
+.security-item .seci-left strong{display:block;font-size:0.85rem;font-weight:600}
+.security-item .seci-left span{font-size:0.78rem;color:var(--muted)}
+.password-form{max-width:400px}
+.password-form .pf-group{margin-bottom:14px}
+.password-form .pf-group label{display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+.password-form .pf-group input{width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--font);font-size:0.85rem;outline:none;transition:border-color .2s}
+.password-form .pf-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+.export-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.export-btn{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .2s;text-decoration:none;color:var(--dark);font-family:var(--font)}
+.export-btn:hover{border-color:var(--primary);background:var(--primary-xl);color:var(--primary)}
+.export-btn .eb-icon{width:38px;height:38px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0}
+.export-btn .eb-icon.csv{background:var(--blue-l);color:var(--blue)}
+.export-btn .eb-icon.danger{background:var(--danger-l);color:var(--danger)}
+.export-btn .eb-text{font-size:0.8rem;font-weight:600}
+@media(max-width:1200px){
+.settings-form{grid-template-columns:1fr}
+}
+@media(max-width:992px){
+.settings-tabs{gap:2px}
+.settings-tab{padding:8px 12px;font-size:0.75rem}
+}
+@media(max-width:768px){
+.settings-tab span{display:none}
+.settings-tab i{font-size:1rem}
+.avatar-upload{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+{% include '_sidebar.html' %}
+
+<main class="main">
+  <div class="main-inner">
+
+    <div class="settings-header">
+      <h1>Configuración</h1>
+      <p>Administra tu perfil, preferencias y seguridad</p>
+    </div>
+
+    <div class="settings-toast {% if request.args.get('saved') %}success show{% elif request.args.get('error') %}error show{% endif %}" id="settingsToast">
+      <i class="fas {% if request.args.get('saved') %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+      <span>
+        {% if request.args.get('saved') == 'perfil' %}Perfil actualizado correctamente.
+        {% elif request.args.get('saved') == 'password' %}Contraseña cambiada con éxito.
+        {% elif request.args.get('saved') == 'preferencias' %}Preferencias guardadas.
+        {% elif request.args.get('saved') == 'notificaciones' %}Notificaciones actualizadas.
+        {% elif request.args.get('saved') == 'limpiado' %}Datos de análisis eliminados.
+        {% elif request.args.get('error') == 'password_actual' %}La contraseña actual no es correcta.
+        {% elif request.args.get('error') == 'password_corta' %}La nueva contraseña debe tener mínimo 6 caracteres.
+        {% elif request.args.get('error') == 'password_no_match' %}Las contraseñas nuevas no coinciden.
+        {% endif %}
+      </span>
+      <button style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1.1rem;color:inherit;opacity:0.6" onclick="this.parentElement.classList.remove('show')">&times;</button>
+    </div>
+
+    <div class="settings-tabs" id="settingsTabs">
+      <button class="settings-tab active" data-tab="perfil"><i class="fas fa-user"></i><span> Perfil</span></button>
+      <button class="settings-tab" data-tab="preferencias"><i class="fas fa-palette"></i><span> Preferencias</span></button>
+      <button class="settings-tab" data-tab="notificaciones"><i class="fas fa-bell"></i><span> Notificaciones</span></button>
+      <button class="settings-tab" data-tab="seguridad"><i class="fas fa-shield-alt"></i><span> Seguridad</span></button>
+      <button class="settings-tab" data-tab="datos"><i class="fas fa-database"></i><span> Datos</span></button>
+    </div>
+
+    <!-- TAB: PERFIL -->
+    <div class="settings-section active" id="tab-perfil">
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-user-circle"></i> Información personal</h5><span class="sc-badge">Principal</span></div>
+        <form method="POST" action="{{ url_for('settings.guardar_perfil') }}" id="perfilForm">
+          <div class="avatar-upload">
+            <div class="au-circle">{{ current_user.nombre[:1].upper() if current_user.nombre else 'U' }}</div>
+            <div class="au-info">
+              <div class="au-name">{{ current_user.nombre }}</div>
+              <div class="au-email">{{ current_user.email }}</div>
+              <div class="au-date">Miembro desde {{ current_user.fecha_registro.strftime('%B %Y') if current_user.fecha_registro else '—' }}</div>
+            </div>
+          </div>
+          <div class="settings-form">
+            <div class="sf-group"><label>Nombre completo</label><input type="text" name="nombre" value="{{ current_user.nombre }}" required></div>
+            <div class="sf-group"><label>Correo electrónico</label><input type="email" value="{{ current_user.email }}" disabled><div class="sf-hint" style="font-size:0.72rem;color:var(--muted-l);margin-top:2px">No se puede modificar el correo</div></div>
+            <div class="sf-group"><label>Teléfono</label><input type="text" name="telefono" value="{{ prefs.telefono or '' }}" placeholder="+51 999 999 999" pattern="[\d\+\s\-]{7,20}" title="Teléfono válido (7-20 dígitos)"></div>
+            <div class="sf-group"><label>Ubicación</label><input type="text" name="ubicacion" value="{{ prefs.ubicacion or '' }}" placeholder="Huancayo, Junín"></div>
+          </div>
+          <div style="margin-top:18px"><button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save"></i> Guardar cambios</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: PREFERENCIAS -->
+    <div class="settings-section" id="tab-preferencias">
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-palette"></i> Preferencias de la aplicación</h5></div>
+        <form method="POST" action="{{ url_for('settings.guardar_preferencias') }}" id="prefsForm">
+          <div class="settings-form">
+            <div class="sf-group"><label>Idioma</label>
+              <select name="idioma">
+                <option value="es" {{ 'selected' if prefs.idioma == 'es' }}>Español</option>
+                <option value="en" {{ 'selected' if prefs.idioma == 'en' }}>English</option>
+                <option value="qu" {{ 'selected' if prefs.idioma == 'qu' }}>Quechua</option>
+              </select>
+            </div>
+            <div class="sf-group"><label>Tema</label>
+              <select name="tema">
+                <option value="light" {{ 'selected' if prefs.tema == 'light' }}>Claro</option>
+                <option value="dark" {{ 'selected' if prefs.tema == 'dark' }}>Oscuro</option>
+              </select>
+            </div>
+            <div class="sf-group"><label>Formato de fecha</label>
+              <select name="formato_fecha">
+                <option value="DD/MM/YYYY" {{ 'selected' if prefs.formato_fecha == 'DD/MM/YYYY' }}>DD/MM/AAAA</option>
+                <option value="MM/DD/YYYY" {{ 'selected' if prefs.formato_fecha == 'MM/DD/YYYY' }}>MM/DD/AAAA</option>
+                <option value="YYYY-MM-DD" {{ 'selected' if prefs.formato_fecha == 'YYYY-MM-DD' }}>AAAA-MM-DD</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:18px"><button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save"></i> Guardar preferencias</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: NOTIFICACIONES -->
+    <div class="settings-section" id="tab-notificaciones">
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-bell"></i> Notificaciones</h5></div>
+        <div class="sc-sub">Controla qué notificaciones deseas recibir en la plataforma.</div>
+        <form method="POST" action="{{ url_for('settings.guardar_notificaciones') }}" id="notifForm">
+          <div class="switch-row"><div class="sr-info"><strong>Alertas de enfermedades</strong><span>Notificaciones cuando se detecten enfermedades en tus cultivos</span></div><label class="switch"><input type="checkbox" name="notif_enfermedades" {{ 'checked' if prefs.notif_enfermedades }}><span class="slider"></span></label></div>
+          <div class="switch-row"><div class="sr-info"><strong>Recomendaciones agrícolas</strong><span>Sugerencias personalizadas basadas en tus análisis y ubicación</span></div><label class="switch"><input type="checkbox" name="notif_recomendaciones" {{ 'checked' if prefs.notif_recomendaciones }}><span class="slider"></span></label></div>
+          <div class="switch-row"><div class="sr-info"><strong>Clima extremo</strong><span>Alertas sobre condiciones climáticas adversas para tus cultivos</span></div><label class="switch"><input type="checkbox" name="notif_clima" {{ 'checked' if prefs.notif_clima }}><span class="slider"></span></label></div>
+          <div class="switch-row"><div class="sr-info"><strong>Recordatorios de fertilización</strong><span>Alertas programadas para aplicar fertilizantes según el calendario</span></div><label class="switch"><input type="checkbox" name="notif_recordatorios" {{ 'checked' if prefs.notif_recordatorios }}><span class="slider"></span></label></div>
+          <div style="margin-top:16px"><button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save"></i> Guardar notificaciones</button></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB: SEGURIDAD -->
+    <div class="settings-section" id="tab-seguridad">
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-lock"></i> Cambiar contraseña</h5></div>
+        <form method="POST" action="{{ url_for('settings.cambiar_password') }}" class="password-form" id="passwordForm">
+          <div class="pf-group"><label>Contraseña actual</label><input type="password" name="password_actual" required></div>
+          <div class="pf-group"><label>Nueva contraseña</label><input type="password" name="password_nueva" required minlength="6"></div>
+          <div class="pf-group"><label>Confirmar nueva contraseña</label><input type="password" name="password_confirmar" required minlength="6"></div>
+          <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-save"></i> Cambiar contraseña</button>
+        </form>
+      </div>
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-sign-out-alt"></i> Cerrar sesión</h5></div>
+        <div class="sc-sub">Finaliza tu sesión actual en el sistema.</div>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+      </div>
+    </div>
+
+    <!-- TAB: DATOS -->
+    <div class="settings-section" id="tab-datos">
+      <div class="settings-card">
+        <div class="sc-hdr"><h5><i class="fas fa-download"></i> Exportar datos</h5></div>
+        <div class="sc-sub">Descarga tus análisis en formato CSV.</div>
+        <div class="export-row">
+          <a href="{{ url_for('settings.exportar_datos', formato='csv') }}" class="export-btn"><div class="eb-icon csv"><i class="fas fa-file-csv"></i></div><div class="eb-text">Exportar CSV</div></a>
+          <button class="export-btn" onclick="if(confirm('¿Eliminar todos tus análisis? Esta acción no se puede deshacer.')){window.location.href='{{ url_for('settings.limpiar_datos') }}'}"><div class="eb-icon danger"><i class="fas fa-trash-alt"></i></div><div class="eb-text">Eliminar análisis</div></button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="dash-footer">
+    <div>© 2026 CelesteAI - Inteligencia Artificial para la Agricultura</div>
+    <div class="df-right">
+      <a href="{{ url_for('analisis.metodologia') }}">Metodología</a>
+      <a href="#">Privacidad</a>
+    </div>
+  </footer>
+</main>
+
+<script>
+document.querySelectorAll('.settings-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.settings-tab').forEach(function(t){t.classList.remove('active')});
+    document.querySelectorAll('.settings-section').forEach(function(s){s.classList.remove('active')});
+    this.classList.add('active');
+    document.getElementById('tab-' + this.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+(function(){
+  var toast = document.getElementById('settingsToast');
+  if (toast && toast.classList.contains('show')) {
+    setTimeout(function(){toast.classList.remove('show')}, 5000);
+  }
+})();
+
+document.getElementById('perfilForm')?.addEventListener('submit', function(e) {
+  var tel = this.querySelector('input[name="telefono"]');
+  if (tel && tel.value) {
+    var clean = tel.value.replace(/[\s\-\+]/g, '');
+    if (clean.length > 0 && (clean.length < 7 || clean.length > 20 || !/^[\d]+$/.test(clean))) {
+      e.preventDefault();
+      alert('Ingresa un número de teléfono válido (7-20 dígitos).');
+      return;
+    }
+  }
+});
+</script>
+
+</body>
+</html>

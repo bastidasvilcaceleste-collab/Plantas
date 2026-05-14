@@ -1,0 +1,237 @@
+<script>
+window.addEventListener('error', function(e) {
+  if (e.message && (e.message.toLowerCase().includes('model does not support') || e.message.toLowerCase().includes('cannot read') || e.message.toLowerCase().includes('image.png'))) {
+    console.warn('[CelesteAI] External error suppressed:', e.message);
+    e.preventDefault(); return true;
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  if (e.reason && typeof e.reason === 'object' && e.reason.message && e.reason.message.toLowerCase().includes('model does not support')) {
+    console.warn('[CelesteAI] External promise rejection suppressed:', e.reason.message);
+    e.preventDefault(); return true;
+  }
+});
+</script>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 28 28" width="24" height="24" fill="none">
+      <rect x="11" y="5" width="6" height="15" rx="3" fill="#1b7a3d"/>
+      <rect x="7.5" y="10" width="3.5" height="5" rx="1.75" fill="#1b7a3d"/>
+      <rect x="17" y="12" width="3.5" height="5" rx="1.75" fill="#1b7a3d"/>
+      <rect x="6.5" y="20" width="15" height="2.5" rx="1.25" fill="#0f5c2a" opacity="0.5"/>
+      <path d="M7 22h14l-1.5 4H8.5L7 22z" fill="#0f5c2a" opacity="0.3"/>
+      <circle cx="14" cy="4" r="2.2" fill="#ff7eb3"/>
+      <circle cx="14" cy="4" r="1" fill="#ffd93d"/>
+    </svg>
+    CelesteAI
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('analisis.dashboard') }}" class="sn-item {{ 'active' if active_page == 'dashboard' else '' }}">
+      <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('analisis.analizar') }}" class="sn-item {{ 'active' if active_page == 'analizar' else '' }}">
+      <i class="fas fa-microscope"></i><span>Analizar Plantas</span>
+    </a>
+    <a href="{{ url_for('analisis.historial') }}" class="sn-item {{ 'active' if active_page == 'historial' else '' }}">
+      <i class="fas fa-history"></i><span>Historial de Análisis</span>
+    </a>
+    <a href="{{ url_for('analisis.biblioteca') }}" class="sn-item {{ 'active' if active_page == 'biblioteca' else '' }}">
+      <i class="fas fa-book"></i><span>Biblioteca Agrícola</span>
+    </a>
+    <a href="{{ url_for('analisis.fertilizantes') }}" class="sn-item {{ 'active' if active_page == 'fertilizantes' else '' }}">
+      <i class="fas fa-flask"></i><span>Fertilizantes</span>
+    </a>
+    <a href="{{ url_for('analisis.clima') }}" class="sn-item {{ 'active' if active_page == 'clima' else '' }}">
+      <i class="fas fa-cloud-sun"></i><span>Clima y Ubicación</span>
+    </a>
+    <a href="{{ url_for('analisis.metodologia') }}" class="sn-item {{ 'active' if active_page == 'metodologia' else '' }}">
+      <i class="fas fa-graduation-cap"></i><span>Metodología (Tesis)</span>
+    </a>
+    <a href="{{ url_for('analisis.reportes') }}" class="sn-item {{ 'active' if active_page == 'reportes' else '' }}">
+      <i class="fas fa-chart-bar"></i><span>Reportes</span>
+    </a>
+    <a href="{{ url_for('settings.configuracion') }}" class="sn-item {{ 'active' if active_page == 'settings' else '' }}">
+      <i class="fas fa-cog"></i><span>Configuración</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-widgets">
+    <div class="sw-card">
+      <div class="swc-icon"><i class="fas fa-seedling"></i></div>
+      <div class="swc-title">Tu huerto</div>
+      <div class="swc-text">Gestiona y monitorea tus cultivos</div>
+      <a href="{{ url_for('analisis.analizar') }}" class="swc-btn swc-btn-solid" onclick="event.preventDefault();abrirHuerto()">Ver mis cultivos</a>
+      <div id="huertoMini" style="margin-top:8px;font-size:0.72rem;color:var(--muted);display:none">
+        <span id="huertoCount">0</span> cultivos registrados
+      </div>
+    </div>
+    <div class="sw-card" style="background:var(--primary-xl);border-color:#c8e0ce">
+      <div class="swc-icon">🤖</div>
+      <div class="swc-title">Asistente IA</div>
+      <div class="swc-text">Recomendaciones rápidas para tus cultivos</div>
+      <button class="swc-btn swc-btn-solid" onclick="abrirChat()" style="background:var(--primary);color:var(--white);border:none;cursor:pointer;font-family:var(--font)">
+        <i class="fas fa-comment"></i> Preguntar ahora
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="su-avatar">{{ current_user.nombre[:1].upper() if current_user.nombre else 'U' }}</div>
+    <div class="su-info">
+      <div class="su-name">{{ current_user.nombre if current_user.nombre else 'Usuario' }}</div>
+      <a href="{{ url_for('auth.logout') }}" class="su-logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+    </div>
+  </div>
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+    <i class="fas fa-bars"></i>
+  </button>
+</aside>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-left">
+    <div class="topbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Buscar cultivos, enfermedades, fertilizantes..." id="globalSearch" onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v)window.location.href='{{ url_for('analisis.biblioteca') }}?busqueda='+encodeURIComponent(v)}">
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tb-item"><i class="fas fa-map-marker-alt" style="color:var(--primary)"></i> Huancayo, Junín</div>
+    <div class="tb-item tb-weather"><i class="fas fa-cloud-sun" style="color:var(--accent)"></i> 18°C <span style="color:var(--muted);font-size:0.78rem">Nublado</span></div>
+    <div class="tb-user" onclick="document.getElementById('tbDropdown').classList.toggle('open')">
+      <div class="tb-avatar">{{ current_user.nombre[:1].upper() if current_user.nombre else 'U' }}</div>
+      <span class="tb-greeting">Hola, {{ current_user.nombre if current_user.nombre else 'Usuario' }} <i class="fas fa-chevron-down" style="font-size:0.6rem;color:var(--muted);margin-left:2px"></i></span>
+      <div class="tb-dropdown" id="tbDropdown">
+        <div class="tbd-header">{{ current_user.nombre if current_user.nombre else 'Usuario' }}</div>
+        <div class="tbd-email">{{ current_user.email if current_user.email else '' }}</div>
+        <div class="tbd-divider"></div>
+        <a href="{{ url_for('analisis.dashboard') }}" class="tbd-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('analisis.historial') }}" class="tbd-item"><i class="fas fa-history"></i> Historial</a>
+        <a href="{{ url_for('settings.configuracion') }}" class="tbd-item"><i class="fas fa-cog"></i> Configuración</a>
+        <div class="tbd-divider"></div>
+        <a href="{{ url_for('auth.logout') }}" class="tbd-item tbd-logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Modal Huerto -->
+<div id="huertoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)cerrarHuerto()">
+  <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h5 style="font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:8px"><i class="fas fa-seedling" style="color:var(--primary)"></i> Mis cultivos</h5>
+      <button onclick="cerrarHuerto()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted)">&times;</button>
+    </div>
+    <div id="huertoContent" style="text-align:center;padding:20px 0;color:var(--muted)">
+      <i class="fas fa-spinner fa-spin" style="font-size:1.5rem"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Chat -->
+<div id="chatModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)cerrarChat()">
+  <div style="background:var(--white);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px;max-width:480px;width:100%;max-height:60vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,0.15)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h6 style="font-weight:700;display:flex;align-items:center;gap:8px"><span>🤖</span> Asistente CelesteAI</h6>
+      <button onclick="cerrarChat()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted)">&times;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;margin-bottom:12px;min-height:200px;max-height:300px">
+      <div class="chat-bubble ai">
+        <div class="cb-author"><i class="fas fa-leaf"></i> CelesteAI</div>
+        ¡Hola! Soy tu asistente agrícola. Pregúntame sobre cultivos, plagas o recomendaciones.
+        <span class="cb-time">Ahora</span>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('sidebarToggle').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('topbar').classList.toggle('expanded');
+  document.querySelector('.main').classList.toggle('expanded');
+});
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('tbDropdown');
+  if (dd && !e.target.closest('.tb-user')) dd.classList.remove('open');
+});
+
+// ── HUERTO ──
+function abrirHuerto() {
+  document.getElementById('huertoModal').style.display = 'flex';
+  cargarHuerto();
+}
+
+function cerrarHuerto() {
+  document.getElementById('huertoModal').style.display = 'none';
+}
+
+function cargarHuerto() {
+  var el = document.getElementById('huertoContent');
+  fetch('{{ url_for("analisis.list_crops") }}')
+    .then(function(r){return r.json()})
+    .then(function(crops){
+      if (!crops || crops.length === 0) {
+        el.innerHTML = '<i class="fas fa-seedling" style="font-size:2.5rem;color:#d0dfd4;margin-bottom:10px;display:block"></i><p style="font-weight:600;font-size:0.95rem;margin-bottom:4px;color:var(--dark)">Tu huerto está vacío</p><p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">Cuando analices una planta, podrás agregarla al seguimiento.</p><a href="{{ url_for('analisis.analizar') }}" class="btn btn-primary btn-sm"><i class="fas fa-microscope"></i> Analizar cultivo</a>';
+        return;
+      }
+      var html = '<div style="display:flex;flex-direction:column;gap:10px;text-align:left">';
+      crops.forEach(function(c){
+        var statusIcon = c.status === 'activo' ? '🟢' : '🔴';
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border-l)">';
+        html += '<div style="font-size:1.5rem">🌱</div>';
+        html += '<div style="flex:1"><div style="font-weight:600;font-size:0.85rem">' + c.crop_name + '</div>';
+        html += '<div style="font-size:0.72rem;color:var(--muted)">' + statusIcon + ' ' + c.status + (c.last_analysis ? ' · Último: ' + c.last_analysis : '') + '</div></div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    })
+    .catch(function(){
+      el.innerHTML = '<p style="color:var(--danger)">Error al cargar cultivos.</p>';
+    });
+}
+
+// ── CHAT ──
+function abrirChat() {
+  document.getElementById('chatModal').style.display = 'flex';
+  document.getElementById('chatInput').focus();
+}
+
+function cerrarChat() {
+  document.getElementById('chatModal').style.display = 'none';
+}
+
+function sendChat() {
+  var input = document.getElementById('chatInput');
+  var msg = input.value.trim();
+  if (!msg) return;
+  var container = document.getElementById('chatMessages');
+  var time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  container.innerHTML += '<div class="chat-bubble user">' + msg.replace(/</g,'&lt;') + '<span class="cb-time">' + time + '</span></div>';
+  input.value = '';
+  setTimeout(function() {
+    var resp = generarRespuesta(msg);
+    container.innerHTML += '<div class="chat-bubble ai"><div class="cb-author"><i class="fas fa-leaf"></i> CelesteAI</div>' + resp + '<span class="cb-time">' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</span></div>';
+    container.scrollTop = container.scrollHeight;
+  }, 500);
+  container.scrollTop = container.scrollHeight;
+}
+
+function generarRespuesta(msg) {
+  var m = msg.toLowerCase();
+  if (m.includes('tizón') || m.includes('plaga') || m.includes('enfermedad')) return 'Para diagnosticar enfermedades, usa la sección "Analizar Plantas" con una foto de tu cultivo. Puedo decirte que los tizones más comunes son el temprano (manchas concéntricas) y tardío (manchas acuosas). ¿De qué cultivo se trata?';
+  if (m.includes('riego') || m.includes('agua')) return 'El riego recomendado varía según el cultivo. En general: papa (cada 3-5 días), tomate (cada 2-3 días), maíz (cada 4-7 días). Revisa la humedad del suelo antes de regar. ¿Necesitas info de algún cultivo en particular?';
+  if (m.includes('fertiliz') || m.includes('abono')) return 'La fertilización depende del cultivo y etapa. Para papa: NPK 10-20-20 en siembra. Para tomate: NPK 15-15-15 cada 15 días. Revisa la sección Fertilizantes para más detalles.';
+  if (m.includes('clima') || m.includes('temperatura') || m.includes('lluvia')) return 'Las condiciones climáticas ideales varían: papa (15-22°C), tomate (20-28°C), maíz (18-30°C). Revisa la sección Clima para ver el pronóstico actualizado de tu zona.';
+  if (m.includes('hola') || m.includes('buenos días') || m.includes('buenas')) return '¡Hola! Soy CelesteAI, tu asistente agrícola. Puedo ayudarte con información sobre cultivos, plagas, fertilizantes, riego y más. ¿En qué puedo ayudarte hoy? 🌱';
+  if (m.includes('cultivo') || m.includes('sembrar') || m.includes('plantar')) return 'Los cultivos disponibles para análisis son: Papa, Tomate y Maíz. En la biblioteca agrícola encontrarás guías completas para más de 25 cultivos. ¿Cuál te interesa?';
+  return 'Gracias por tu consulta. Para un diagnóstico preciso de enfermedades, usa la sección "Analizar Plantas" con una foto de tu cultivo. Para información general, revisa la Biblioteca Agrícola. ¿Hay algo más en lo que pueda ayudarte? 🌱';
+}
+</script>

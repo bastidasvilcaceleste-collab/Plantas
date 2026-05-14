@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Diagnóstico Agrícola con Inteligencia Artificial</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Global error interceptor -->
+<script>
+window.addEventListener('error', function(e) {
+  if (e.message && (e.message.toLowerCase().includes('model does not support') || e.message.toLowerCase().includes('cannot read'))) {
+    console.warn('[CelesteAI] External error suppressed:', e.message);
+    e.preventDefault(); return true;
+  }
+});
+</script>
+<style>
+:root {
+  --primary: #1b7a3d; --primary-d: #0f5c2a; --primary-l: #e8f5e9; --primary-xl: #f1f8f0;
+  --accent: #e65100; --bg: #f8f9fa; --white: #fff; --dark: #1a1a1a; --muted: #6b7280; --border: #e5e7eb;
+  --radius: 12px; --radius-lg: 16px; --radius-xl: 20px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06); --shadow-h: 0 8px 30px rgba(0,0,0,0.1);
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--dark); -webkit-font-smoothing: antialiased; }
+
+/* ── NAVBAR ──────────────────────────────── */
+.navbar { position: fixed; top: 0; left: 0; right: 0; height: 68px; background: var(--white); border-bottom: 1px solid var(--border); z-index: 1000; display: flex; align-items: center; padding: 0 32px; }
+.navbar-inner { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 1280px; margin: 0 auto; }
+.navbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--primary); font-weight: 800; font-size: 1.25rem; }
+.navbar-logo:hover { color: var(--primary-d); }
+.navbar-center { display: flex; align-items: center; gap: 4px; }
+.navbar-center a { display: flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 10px; color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all .2s; }
+.navbar-center a:hover { background: var(--primary-l); color: var(--primary); }
+.navbar-center a.active { background: var(--primary-l); color: var(--primary-d); font-weight: 600; }
+.navbar-right { display: flex; align-items: center; gap: 12px; }
+.nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
+.nav-greeting { font-size: 0.85rem; font-weight: 600; color: var(--dark); }
+.nav-right-btn { padding: 8px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all .2s; }
+.nav-btn-outline { border: 1.5px solid var(--border); color: var(--muted); }
+.nav-btn-outline:hover { border-color: #fecaca; background: #fef2f2; color: #dc2626; }
+.nav-btn-solid { background: var(--primary); color: var(--white); }
+.nav-btn-solid:hover { background: var(--primary-d); color: var(--white); transform: translateY(-1px); }
+
+/* ── HERO ────────────────────────────────── */
+.hero-wrap { padding: 100px 0 0; }
+.hero-card { margin: 0 32px; border-radius: var(--radius-xl); overflow: hidden; position: relative; min-height: 420px; display: flex; background: linear-gradient(135deg, #0f5c2a 0%, #1b7a3d 50%, #0a4a20 100%); }
+.hero-bg { position: absolute; inset: 0; background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" opacity="0.07"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="white"/><stop offset="1" stop-color="white" stop-opacity="0"/></linearGradient></defs><ellipse cx="200" cy="250" rx="180" ry="120" fill="white" opacity="0.15"/><ellipse cx="700" cy="200" rx="220" ry="140" fill="white" opacity="0.1"/><ellipse cx="1050" cy="300" rx="160" ry="100" fill="white" opacity="0.12"/><path d="M0 450 Q 300 350 600 450 T 1200 450 L 1200 600 L 0 600 Z" fill="white" opacity="0.08"/><path d="M0 500 Q 400 420 800 500 T 1200 500 L 1200 600 L 0 600 Z" fill="white" opacity="0.05"/><circle cx="120" cy="120" r="40" fill="white" opacity="0.1"/><circle cx="350" cy="80" r="30" fill="white" opacity="0.08"/><circle cx="580" cy="130" r="25" fill="white" opacity="0.06"/><circle cx="850" cy="90" r="35" fill="white" opacity="0.09"/><circle cx="1080" cy="150" r="28" fill="white" opacity="0.07"/><path d="M100 300 Q 150 250 200 300" stroke="white" stroke-width="1.5" fill="none" opacity="0.12"/><path d="M500 200 Q 550 150 600 220 Q 650 280 700 200" stroke="white" stroke-width="1.5" fill="none" opacity="0.1"/><path d="M900 350 Q 950 300 1000 370" stroke="white" stroke-width="1.5" fill="none" opacity="0.08"/></svg>') no-repeat center/cover; }
+.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 56px 56px; gap: 40px; }
+.hero-left { flex: 1.3; }
+.hero-left h1 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 900; color: var(--white); line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 14px; }
+.hero-left h1 span { color: #a5d6a7; }
+.hero-left p { font-size: 1rem; color: rgba(255,255,255,0.8); line-height: 1.7; max-width: 520px; margin-bottom: 28px; }
+.hero-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.hero-stat { display: flex; align-items: center; gap: 12px; }
+.hero-stat .hs-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.hero-stat .hs-num { font-size: 1.4rem; font-weight: 900; color: var(--white); line-height: 1.1; }
+.hero-stat .hs-lbl { font-size: 0.75rem; color: rgba(255,255,255,0.7); }
+.hero-right { flex: 1; max-width: 320px; }
+.hero-card-floating { background: var(--white); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 12px 48px rgba(0,0,0,0.2); }
+.hero-card-floating h3 { font-size: 1rem; font-weight: 800; margin-bottom: 16px; color: var(--dark); }
+.hero-card-floating .hcf-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.hero-card-floating .hcf-feat { display: flex; align-items: center; gap: 10px; font-size: 0.88rem; color: var(--dark); }
+.hero-card-floating .hcf-feat .hcf-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+.hero-card-floating .hcf-feat .hcf-icon.green { background: var(--primary-l); color: var(--primary); }
+.hero-card-floating .hcf-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; border-radius: 10px; background: var(--primary); color: var(--white); font-size: 0.9rem; font-weight: 700; text-decoration: none; transition: all .25s; border: none; cursor: pointer; font-family: var(--font); }
+.hero-card-floating .hcf-btn:hover { background: var(--primary-d); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(27,122,61,0.3); }
+
+/* ── CROP SECTION ────────────────────────── */
+.section { padding: 60px 32px; }
+.section-inner { max-width: 1280px; margin: 0 auto; }
+.section-title { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 4px; letter-spacing: -0.3px; }
+.section-sub { color: var(--muted); text-align: center; font-size: 0.9rem; margin-bottom: 32px; }
+.crop-layout { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
+.crop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 20px; }
+.crop-card { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); transition: all .3s; text-decoration: none; color: var(--dark); display: block; }
+.crop-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-h); border-color: var(--primary); }
+.crop-card .cc-img { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 4rem; position: relative; }
+.crop-card .cc-img .cc-badge { position: absolute; top: 10px; right: 10px; padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.cc-img-papa { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.cc-img-tomate { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+.cc-img-maiz { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.cc-img-cafe { background: linear-gradient(135deg, #efebe9, #d7ccc8); }
+.cc-img-palta { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+.cc-badge-soon { background: var(--accent); color: var(--white); }
+.crop-card .cc-body { padding: 16px 18px 18px; }
+.crop-card .cc-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+.crop-card .cc-count { font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; }
+.crop-card .cc-action { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 50px; font-size: 0.78rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; text-decoration: none; font-family: var(--font); }
+.cc-action-ok { background: var(--primary); color: var(--white); }
+.cc-action-ok:hover { background: var(--primary-d); transform: translateY(-1px); }
+.cc-action-na { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+/* ── RIGHT SIDEBAR WIDGETS ──────────────── */
+.side-widgets { display: flex; flex-direction: column; gap: 16px; }
+.side-widget { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 20px; box-shadow: var(--shadow); }
+.side-widget.green { background: var(--primary-xl); border-color: #c8e0ce; }
+.side-widget h5 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.side-widget h5 i { color: var(--primary); }
+.side-widget ul { list-style: none; padding: 0; margin: 0; }
+.side-widget ul li { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+.side-widget ul li i { color: var(--primary); margin-top: 2px; font-size: 0.75rem; }
+.side-widget .sw-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; text-decoration: none; transition: all .2s; }
+.sw-btn-primary { background: var(--primary); color: var(--white); }
+.sw-btn-primary:hover { background: var(--primary-d); color: var(--white); }
+.sw-btn-outline { border: 1.5px solid var(--primary); color: var(--primary); }
+.sw-btn-outline:hover { background: var(--primary-l); }
+
+/* ── INFO BAR ────────────────────────────── */
+.info-bar { background: var(--primary-l); padding: 28px 32px; text-align: center; border-top: 1px solid #c8e0ce; border-bottom: 1px solid #c8e0ce; }
+.info-bar-inner { max-width: 1280px; margin: 0 auto; }
+.info-bar h4 { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+.info-bar p { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; }
+.info-bar .ib-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 28px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; background: var(--primary); color: var(--white); text-decoration: none; transition: all .25s; }
+.info-bar .ib-btn:hover { background: var(--primary-d); transform: translateY(-1px); }
+
+/* ── STEPS ───────────────────────────────── */
+.steps-section { background: var(--white); padding: 60px 32px; }
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; position: relative; }
+.steps-grid::before { content: ''; position: absolute; top: 36px; left: 16%; right: 16%; height: 2px; background: var(--border); z-index: 0; }
+.step-item { text-align: center; padding: 20px 16px; position: relative; z-index: 1; background: var(--white); }
+.step-item .si-num { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin: 0 auto 14px; box-shadow: 0 4px 14px rgba(27,122,61,0.25); }
+.step-item h5 { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; }
+.step-item p { font-size: 0.82rem; color: var(--muted); line-height: 1.6; max-width: 260px; margin: 0 auto; }
+
+/* ── FOOTER ──────────────────────────────── */
+.footer { background: #0d4a1f; color: rgba(255,255,255,0.6); padding: 32px 0; text-align: center; font-size: 0.82rem; }
+.footer .fbrand { color: #a5d6a7; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
+
+/* ── RESPONSIVE ──────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-inner { flex-direction: column; padding: 40px 32px; }
+  .hero-right { max-width: 100%; width: 100%; }
+  .hero-card-floating { display: flex; align-items: center; gap: 24px; padding: 20px 24px; }
+  .hero-card-floating h3 { margin-bottom: 0; white-space: nowrap; }
+  .hero-card-floating .hcf-features { flex-direction: row; margin-bottom: 0; }
+  .crop-layout { grid-template-columns: 1fr; }
+  .side-widgets { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+@media (max-width: 768px) {
+  .navbar { padding: 0 16px; }
+  .navbar-center { display: none; }
+  .hero-wrap { padding: 76px 0 0; }
+  .hero-card { margin: 0 16px; border-radius: var(--radius-lg); }
+  .hero-inner { padding: 32px 20px; }
+  .hero-stats { gap: 16px; }
+  .hero-stat .hs-num { font-size: 1.1rem; }
+  .hero-card-floating { flex-direction: column; text-align: center; }
+  .hero-card-floating .hcf-features { flex-direction: column; }
+  .section { padding: 40px 16px; }
+  .crop-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .side-widgets { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .steps-grid::before { display: none; }
+  .nav-greeting { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="{{ url_for('index') }}" class="navbar-logo">
+      <svg viewBox="0 0 28 28" width="24" height="24" fill="none">
+        <rect x="11" y="5" width="6" height="15" rx="3" fill="#1b7a3d"/>
+        <rect x="7.5" y="10" width="3.5" height="5" rx="1.75" fill="#1b7a3d"/>
+        <rect x="17" y="12" width="3.5" height="5" rx="1.75" fill="#1b7a3d"/>
+        <rect x="6.5" y="20" width="15" height="2.5" rx="1.25" fill="#0f5c2a" opacity="0.5"/>
+        <path d="M7 22h14l-1.5 4H8.5L7 22z" fill="#0f5c2a" opacity="0.3"/>
+        <circle cx="14" cy="4" r="2.2" fill="#ff7eb3"/>
+        <circle cx="14" cy="4" r="1" fill="#ffd93d"/>
+      </svg>
+      CelesteAI
+    </a>
+    <div class="navbar-center">
+      <a href="{{ url_for('analisis.dashboard') }}" class="{{ 'active' if active_page == 'dashboard' else '' }}"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <a href="{{ url_for('analisis.analizar') }}" class="{{ 'active' if active_page == 'analizar' else '' }}"><i class="fas fa-microscope"></i> Análisis</a>
+      <a href="{{ url_for('analisis.historial') }}" class="{{ 'active' if active_page == 'historial' else '' }}"><i class="fas fa-history"></i> Historial</a>
+      <a href="{{ url_for('analisis.biblioteca') }}" class="{{ 'active' if active_page == 'biblioteca' else '' }}"><i class="fas fa-book"></i> Biblioteca</a>
+    </div>
+    <div class="navbar-right">
+      {% if current_user.is_authenticated %}
+      <div class="nav-avatar">{{ current_user.nombre[:1].upper() if current_user.nombre else 'U' }}</div>
+      <span class="nav-greeting">Hola, {{ current_user.nombre if current_user.nombre else 'Usuario' }} <i class="fas fa-chevron-down" style="font-size:0.65rem;color:var(--muted);margin-left:2px"></i></span>
+      <a href="{{ url_for('auth.logout') }}" class="nav-right-btn nav-btn-outline"><i class="fas fa-sign-out-alt me-1"></i>Salir</a>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" class="nav-right-btn nav-btn-outline">Iniciar sesión</a>
+      <a href="{{ url_for('auth.registro') }}" class="nav-right-btn nav-btn-solid">Registrarse</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero-card">
+    <div class="hero-bg"></div>
+    <div class="hero-inner">
+      <div class="hero-left">
+        <h1>Protege tus cultivos con <span>inteligencia artificial</span></h1>
+        <p>Sube una foto de las hojas y obtén un diagnóstico preciso al instante. Detecta enfermedades en papa, tomate y maíz con redes neuronales entrenadas.</p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hs-icon"><i class="fas fa-disease"></i></div>
+            <div><div class="hs-num">38</div><div class="hs-lbl">Enfermedades detectables</div></div>
+          </div>
+          <div class="hero-stat">
+            <div class="hs-icon"><i class="fas fa-seedling"></i></div>
+            <div><div class="hs-num">15+</div><div class="hs-lbl">Cultivos soportados</div></div>
+          </div>
+          <div class="hero-stat">
+            <div class="hs-icon"><i class="fas fa-database"></i></div>
+            <div><div class="hs-num">87K</div><div class="hs-lbl">Imágenes entrenadas</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-card-floating">
+          <h3>Diagnóstico rápido</h3>
+          <div class="hcf-features">
+            <div class="hcf-feat"><div class="hcf-icon green"><i class="fas fa-check"></i></div> Preciso</div>
+            <div class="hcf-feat"><div class="hcf-icon green"><i class="fas fa-check"></i></div> Confiable</div>
+            <div class="hcf-feat"><div class="hcf-icon green"><i class="fas fa-check"></i></div> Instantáneo</div>
+          </div>
+          <a href="{{ url_for('analisis.analizar') }}" class="hcf-btn"><i class="fas fa-microscope"></i> Comenzar análisis</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CROP SECTION -->
+<section class="section">
+  <div class="section-inner">
+    <h2 class="section-title">Selecciona tu cultivo</h2>
+    <p class="section-sub">Elige el cultivo que deseas analizar y obtén un diagnóstico especializado con IA</p>
+    <div class="crop-layout">
+      <div class="crop-grid">
+        <a href="{{ url_for('analisis.analizar', cultivo='papa') }}" class="crop-card">
+          <div class="cc-img cc-img-papa"><span>🥔</span></div>
+          <div class="cc-body">
+            <div class="cc-name">Papa</div>
+            <div class="cc-count">3 enfermedades detectables</div>
+            <span class="cc-action cc-action-ok"><i class="fas fa-microscope"></i> Analizar</span>
+          </div>
+        </a>
+        <a href="{{ url_for('analisis.analizar', cultivo='tomate') }}" class="crop-card">
+          <div class="cc-img cc-img-tomate"><span>🍅</span></div>
+          <div class="cc-body">
+            <div class="cc-name">Tomate</div>
+            <div class="cc-count">10 enfermedades detectables</div>
+            <span class="cc-action cc-action-ok"><i class="fas fa-microscope"></i> Analizar</span>
+          </div>
+        </a>
+        <a href="{{ url_for('analisis.analizar', cultivo='maiz') }}" class="crop-card">
+          <div class="cc-img cc-img-maiz"><span>🌽</span></div>
+          <div class="cc-body">
+            <div class="cc-name">Maíz</div>
+            <div class="cc-count">4 enfermedades detectables</div>
+            <span class="cc-action cc-action-ok"><i class="fas fa-microscope"></i> Analizar</span>
+          </div>
+        </a>
+        <a href="#" class="crop-card" onclick="event.preventDefault();alert('Disponible próximamente')">
+          <div class="cc-img cc-img-cafe"><span>☕</span><span class="cc-badge cc-badge-soon">En desarrollo</span></div>
+          <div class="cc-body">
+            <div class="cc-name">Café</div>
+            <div class="cc-count">Próximamente</div>
+            <span class="cc-action cc-action-na"><i class="fas fa-clock"></i> Próximamente</span>
+          </div>
+        </a>
+        <a href="#" class="crop-card" onclick="event.preventDefault();alert('Disponible próximamente')">
+          <div class="cc-img cc-img-palta"><span>🥑</span><span class="cc-badge cc-badge-soon">En desarrollo</span></div>
+          <div class="cc-body">
+            <div class="cc-name">Palta</div>
+            <div class="cc-count">Próximamente</div>
+            <span class="cc-action cc-action-na"><i class="fas fa-clock"></i> Próximamente</span>
+          </div>
+        </a>
+      </div>
+      <div class="side-widgets">
+        <div class="side-widget green">
+          <h5><i class="fas fa-lightbulb"></i> ¿Sabías qué?</h5>
+          <p style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:12px">El diagnóstico temprano puede prevenir hasta el 80% de pérdidas en cultivos.</p>
+          <ul>
+            <li><i class="fas fa-check-circle"></i> Sube una foto clara con buena iluminación</li>
+            <li><i class="fas fa-check-circle"></i> Evita sombras fuertes en la hoja</li>
+            <li><i class="fas fa-check-circle"></i> Incluye ambas caras de la hoja</li>
+            <li><i class="fas fa-check-circle"></i> Enfoca bien la zona afectada</li>
+          </ul>
+        </div>
+        <div class="side-widget">
+          <h5><i class="fas fa-question-circle" style="color:var(--accent)"></i> ¿Necesitas ayuda?</h5>
+          <p style="font-size:0.82rem;color:var(--muted);line-height:1.6">Consulta nuestra biblioteca agrícola o contáctanos para más información sobre cultivos y enfermedades.</p>
+          <a href="{{ url_for('analisis.biblioteca') }}" class="sw-btn sw-btn-outline"><i class="fas fa-book"></i> Ver biblioteca</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INFO BAR -->
+<div class="info-bar">
+  <div class="info-bar-inner">
+    <h4>¿No encuentras tu cultivo?</h4>
+    <p>En nuestra biblioteca agrícola encontrarás guías y recomendaciones para muchos más cultivos.</p>
+    <a href="{{ url_for('analisis.biblioteca') }}" class="ib-btn"><i class="fas fa-book me-1"></i> Ir a biblioteca</a>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="steps-section">
+  <div class="section-inner">
+    <h2 class="section-title">¿Cómo funciona?</h2>
+    <p class="section-sub">Tres pasos simples para obtener el diagnóstico de tu cultivo</p>
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="si-num">1</div>
+        <h5>Selecciona tu cultivo</h5>
+        <p>Elige entre papa, tomate o maíz. Cada cultivo tiene un modelo entrenado específicamente para detectar sus enfermedades.</p>
+      </div>
+      <div class="step-item">
+        <div class="si-num">2</div>
+        <h5>Sube una foto de la hoja</h5>
+        <p>Toma una foto clara de la hoja con buena iluminación sobre un fondo uniforme para obtener el mejor resultado.</p>
+      </div>
+      <div class="step-item">
+        <div class="si-num">3</div>
+        <h5>Obtén el diagnóstico</h5>
+        <p>Recibe el resultado con el estado de salud, nivel de confianza, recomendaciones de tratamiento y consejos de cultivo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div style="font-size:1rem;font-weight:700;color:#a5d6a7">CelesteAI</div>
+  <div style="margin-top:2px">2026</div>
+</footer>
+
+</body>
+</html>

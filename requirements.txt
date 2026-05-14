@@ -1,0 +1,12 @@
+flask>=3.0
+flask_sqlalchemy>=3.0
+flask_login>=0.6
+flask_migrate>=4.0
+flask_cors>=4.0
+werkzeug>=3.0
+torch>=2.0
+torchvision>=0.15
+Pillow>=10.0
+python-dotenv>=1.0
+gunicorn>=21.0
+scikit-learn>=1.0

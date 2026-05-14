@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Fertilizantes</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+:root{--primary:#1b7a3d;--primary-d:#0f5c2a;--primary-l:#e8f5e9;--primary-xl:#f1f8f0;--accent:#e65100;--danger:#dc2626;--warning:#d97706;--blue:#1565c0;--bg:#f5f7fa;--white:#fff;--dark:#1a1a1a;--muted:#6b7280;--muted-l:#9ca3b0;--border:#e5e7eb;--border-l:#f0f0f0;--radius-sm:8px;--radius:12px;--radius-lg:16px;--radius-xl:20px;--shadow:0 2px 12px rgba(0,0,0,0.06);--shadow-h:0 8px 30px rgba(0,0,0,0.1);--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.fert-section{margin-bottom:28px}
+.fert-header{margin-bottom:28px}
+.fert-header h1{font-size:1.65rem;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px}
+.fert-header p{color:var(--muted);font-size:0.88rem;margin:0}
+/* Info cards row */
+.fert-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px}
+.fert-info-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px 22px 20px;box-shadow:var(--shadow);transition:all .3s;display:flex;gap:14px;align-items:flex-start}
+.fert-info-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.fert-info-card .fic-icon{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.fert-info-card .fic-icon.green{background:var(--primary-l);color:var(--primary)}
+.fert-info-card .fic-icon.orange{background:#fff3e0;color:var(--accent)}
+.fert-info-card .fic-icon.blue{background:var(--blue-l);color:var(--blue)}
+.fert-info-card .fic-body{flex:1;min-width:0}
+.fert-info-card .fic-body h6{font-weight:700;font-size:0.85rem;margin-bottom:3px}
+.fert-info-card .fic-body p{font-size:0.78rem;color:var(--muted);line-height:1.5;margin:0}
+.fert-info-card.fert-info-tip{background:linear-gradient(135deg,#e8f5e9,#f1f8f0);border-color:#c8e0ce}
+.fert-info-card.fert-info-tip .fic-body h6{color:var(--primary-d)}
+.fert-info-card.fert-info-tip .fic-body p{color:var(--primary-d)}
+/* Category pills */
+.fert-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.fert-cat{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:50px;font-size:0.82rem;font-weight:500;color:var(--muted);background:var(--white);border:1.5px solid var(--border);cursor:pointer;transition:all .2s;font-family:var(--font)}
+.fert-cat i{font-size:0.8rem}
+.fert-cat:hover{border-color:var(--primary-l);color:var(--primary);background:var(--primary-xl)}
+.fert-cat.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.fert-cat.active:hover{background:var(--primary-d);color:var(--white)}
+/* 3-col layout */
+.fert-layout{display:grid;grid-template-columns:260px 1fr 280px;gap:22px;margin-bottom:28px;align-items:start}
+/* Filter panel */
+.fert-filters{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;position:sticky;top:92px}
+.fert-filters h6{font-size:0.82rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border-l)}
+.fert-filters h6 i{color:var(--primary)}
+.fert-filter-group{margin-bottom:16px}
+.fert-filter-group label{display:block;font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:5px}
+.fert-filter-group select{width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--font);font-size:0.82rem;outline:none;background:var(--white);transition:border-color .2s;color:var(--dark);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.fert-filter-group select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+.fert-nutrients{margin-bottom:16px;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm)}
+.fert-nutrients .fn-title{font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:8px}
+.fert-nutrient-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.8rem;cursor:pointer}
+.fert-nutrient-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;border-radius:4px;flex-shrink:0}
+.fert-filter-clear{width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-weight:600;font-size:0.8rem;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.fert-filter-clear:hover{background:var(--primary-l)}
+/* Products panel */
+.fert-products{min-width:0}
+.fert-products-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.fert-products-header h5{font-weight:700;font-size:1rem;margin:0}
+.fert-products-header h5 span{color:var(--muted)}
+.fert-products-header select{padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--font);font-size:0.82rem;outline:none;background:var(--white);color:var(--dark);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+.fert-products-header select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+/* Product card */
+.fert-product{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;margin-bottom:16px;display:flex;gap:20px;transition:all .25s}
+.fert-product:hover{box-shadow:var(--shadow-h);transform:translateY(-2px)}
+.fert-product .fp-img{width:100px;height:100px;border-radius:var(--radius-sm);background:var(--primary-xl);display:flex;align-items:center;justify-content:center;font-size:2.4rem;flex-shrink:0;border:1px solid #c8e0ce}
+.fert-product .fp-body{flex:1;min-width:0}
+.fert-product .fp-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.fert-product .fp-top h6{font-weight:700;font-size:0.95rem;margin:0}
+.fert-product .fp-badge{padding:3px 12px;border-radius:50px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;background:var(--primary-l);color:var(--primary);border:1px solid #c8e0ce}
+.fert-product .fp-badge.organico{background:var(--primary-xl);color:var(--primary-d);border-color:#a5d6a7}
+.fert-product .fp-badge.quimico{background:var(--blue-l);color:var(--blue);border-color:#bbdefb}
+.fert-product .fp-badge.foliar{background:#fff3e0;color:var(--accent);border-color:#ffe0b2}
+.fert-product .fp-badge.especial{background:#f3e5f5;color:#7b1fa2;border-color:#e1bee7}
+.fert-product .fp-desc{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.fert-product .fp-meta{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px}
+.fert-product .fp-meta .fpm-item{display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--muted)}
+.fert-product .fp-meta .fpm-item i{color:var(--primary);font-size:0.7rem;width:14px;text-align:center}
+.fert-product .fp-meta .fpm-item strong{color:var(--dark)}
+.fert-product .fp-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.fert-product .fp-crops{display:flex;gap:4px;flex-wrap:wrap}
+.fert-product .fp-crops .crop-tag{display:inline-block;padding:2px 10px;border-radius:50px;font-size:0.7rem;font-weight:600;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.fert-product .fp-btn{padding:8px 20px;border-radius:var(--radius-sm);background:var(--primary);color:var(--white);font-weight:600;font-size:0.8rem;border:none;cursor:pointer;transition:all .2s;font-family:var(--font);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.fert-product .fp-btn:hover{background:var(--primary-d);color:var(--white);transform:translateY(-1px)}
+/* Right widgets */
+.fert-sidebar{display:flex;flex-direction:column;gap:18px}
+.fert-widget{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;position:sticky}
+.fert-widget.top{top:92px}
+.fert-widget.mid{top:calc(92px + 310px)}
+.fert-widget h6{font-size:0.82rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border-l)}
+.fert-widget h6 i{color:var(--primary)}
+/* Guide steps */
+.guide-step{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-l)}
+.guide-step:last-child{border-bottom:none;padding-bottom:0}
+.guide-step .gs-num{width:26px;height:26px;border-radius:50%;background:var(--primary-l);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;flex-shrink:0;margin-top:1px}
+.guide-step .gs-body{flex:1}
+.guide-step .gs-body strong{display:block;font-size:0.82rem;font-weight:600;margin-bottom:1px}
+.guide-step .gs-body span{font-size:0.76rem;color:var(--muted);line-height:1.4}
+.guide-btn{width:100%;padding:10px;border-radius:var(--radius-sm);background:var(--primary);color:var(--white);font-weight:600;font-size:0.82rem;border:none;cursor:pointer;transition:all .2s;font-family:var(--font);margin-top:12px;text-align:center;display:block;text-decoration:none}
+.guide-btn:hover{background:var(--primary-d);color:var(--white)}
+/* Calculator */
+.calc-group{margin-bottom:12px}
+.calc-group label{display:block;font-size:0.75rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+.calc-group select,.calc-group input{width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:var(--font);font-size:0.82rem;outline:none;background:var(--white);transition:border-color .2s;color:var(--dark)}
+.calc-group select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.calc-group select:focus,.calc-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+.calc-btn{width:100%;padding:10px;border-radius:var(--radius-sm);background:var(--primary);color:var(--white);font-weight:600;font-size:0.82rem;border:none;cursor:pointer;transition:all .2s;font-family:var(--font);margin-top:4px}
+.calc-btn:hover{background:var(--primary-d)}
+.calc-result{display:none;margin-top:12px;padding:12px 14px;background:var(--primary-xl);border-radius:var(--radius-sm);border:1px solid #c8e0ce;font-size:0.82rem;color:var(--primary-d);line-height:1.6}
+.calc-result.show{display:block}
+/* Articles */
+.article-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-l);cursor:pointer;transition:all .15s}
+.article-item:hover{padding-left:4px}
+.article-item:last-child{border-bottom:none;padding-bottom:0}
+.article-item .ai-icon{width:32px;height:32px;border-radius:50%;background:var(--primary-l);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0}
+.article-item .ai-text{font-size:0.82rem;font-weight:500;line-height:1.4;flex:1}
+.article-item .ai-arrow{color:var(--muted-l);font-size:0.7rem}
+.articles-link{display:block;text-align:center;margin-top:10px;font-size:0.8rem;color:var(--primary);font-weight:600;text-decoration:none;padding:8px;border-radius:var(--radius-sm);transition:all .2s}
+.articles-link:hover{background:var(--primary-l);color:var(--primary-d)}
+/* Pagination */
+.fert-pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin:24px 0 28px}
+.fert-pagination .fp-item{width:38px;height:38px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.82rem;font-weight:500;color:var(--muted);background:var(--white);border:1.5px solid var(--border);cursor:pointer;transition:all .2s;font-family:var(--font);text-decoration:none}
+.fert-pagination .fp-item:hover{border-color:var(--primary-l);color:var(--primary);background:var(--primary-xl)}
+.fert-pagination .fp-item.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.fert-pagination .fp-item.active:hover{background:var(--primary-d)}
+.fert-pagination .fp-item.fp-dots{border:none;background:transparent;cursor:default}
+.fert-pagination .fp-item.fp-prevnext{padding:0 14px;width:auto;gap:6px}
+/* Empty state */
+.fert-empty{text-align:center;padding:48px 20px;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border)}
+.fert-empty i{font-size:2.8rem;color:#d0dfd4;margin-bottom:12px}
+.fert-empty h5{font-weight:700;font-size:1rem;margin-bottom:4px}
+.fert-empty p{color:var(--muted);font-size:0.85rem;margin:0}
+/* Product count filter results */
+.fert-count{font-size:0.82rem;color:var(--muted);margin-bottom:12px}
+/* Responsive */
+@media(max-width:1200px){
+.fert-layout{grid-template-columns:240px 1fr 240px;gap:16px}
+.fert-info-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:992px){
+.fert-layout{grid-template-columns:1fr}
+.fert-filters{position:static;margin-bottom:0}
+.fert-sidebar{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.fert-widget.top,.fert-widget.mid{position:static}
+.fert-info-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+.fert-info-grid{grid-template-columns:1fr}
+.fert-sidebar{grid-template-columns:1fr}
+.fert-product{flex-direction:column}
+.fert-product .fp-img{width:80px;height:80px;font-size:1.8rem}
+.fert-products-header{flex-direction:column;align-items:stretch}
+.fert-cats{gap:6px}
+.fert-cat{padding:7px 14px;font-size:0.78rem}
+}
+</style>
+</head>
+<body>
+
+{% include '_sidebar.html' %}
+
+<main class="main">
+  <div class="main-inner">
+
+    <!-- HEADER -->
+    <div class="fert-header">
+      <h1>Fertilizantes</h1>
+      <p>Encuentra los mejores fertilizantes para cada cultivo y etapa de crecimiento</p>
+    </div>
+
+    <!-- INFO CARDS ROW -->
+    <div class="fert-info-grid">
+      <div class="fert-info-card">
+        <div class="fic-icon green"><i class="fas fa-trophy"></i></div>
+        <div class="fic-body">
+          <h6>Mejora el rendimiento</h6>
+          <p>Aumenta la producción y calidad de tus cultivos.</p>
+        </div>
+      </div>
+      <div class="fert-info-card">
+        <div class="fic-icon orange"><i class="fas fa-shield-alt"></i></div>
+        <div class="fic-body">
+          <h6>Fortalece tus plantas</h6>
+          <p>Nutrientes esenciales para plantas más resistentes.</p>
+        </div>
+      </div>
+      <div class="fert-info-card">
+        <div class="fic-icon blue"><i class="fas fa-leaf"></i></div>
+        <div class="fic-body">
+          <h6>Agricultura sostenible</h6>
+          <p>Opciones orgánicas y ecoamigables para tu cultivo.</p>
+        </div>
+      </div>
+      <div class="fert-info-card fert-info-tip">
+        <div class="fic-icon green"><i class="fas fa-lightbulb"></i></div>
+        <div class="fic-body">
+          <h6>Consejo CelesteAI</h6>
+          <p>El uso adecuado de fertilizantes en la dosis y momento correcto puede aumentar el rendimiento hasta en un 40%.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORY PILLS -->
+    <div class="fert-cats" id="fertCats">
+      <span class="fert-cat active" data-cat="todos"><i class="fas fa-th-large"></i> Todos los fertilizantes</span>
+      <span class="fert-cat" data-cat="organico"><i class="fas fa-seedling"></i> Orgánicos</span>
+      <span class="fert-cat" data-cat="quimico"><i class="fas fa-flask"></i> Químicos</span>
+      <span class="fert-cat" data-cat="foliar"><i class="fas fa-spray-can"></i> Foliar</span>
+      <span class="fert-cat" data-cat="granulado"><i class="fas fa-cube"></i> Granulados</span>
+      <span class="fert-cat" data-cat="liquido"><i class="fas fa-tint"></i> Líquidos</span>
+      <span class="fert-cat" data-cat="especial"><i class="fas fa-star"></i> Especiales</span>
+    </div>
+
+    <!-- 3-COLUMN LAYOUT -->
+    <div class="fert-layout">
+
+      <!-- LEFT: FILTERS -->
+      <aside class="fert-filters" id="fertFilters">
+        <h6><i class="fas fa-sliders-h"></i> Filtros</h6>
+
+        <div class="fert-filter-group">
+          <label>Cultivo</label>
+          <select id="filterCultivo">
+            <option value="">Todos los cultivos</option>
+            <option value="Tomate">Tomate</option>
+            <option value="Papa">Papa</option>
+            <option value="Maíz">Maíz</option>
+            <option value="Café">Café</option>
+            <option value="Palta">Palta</option>
+            <option value="Frutales">Frutales</option>
+            <option value="Hortalizas">Hortalizas</option>
+            <option value="Cereales">Cereales</option>
+            <option value="Legumbres">Legumbres</option>
+          </select>
+        </div>
+
+        <div class="fert-filter-group">
+          <label>Tipo de fertilizante</label>
+          <select id="filterTipo">
+            <option value="">Todos los tipos</option>
+            <option value="Orgánico">Orgánico</option>
+            <option value="Químico">Químico</option>
+            <option value="Foliar">Foliar</option>
+            <option value="Granulado">Granulado</option>
+            <option value="Líquido">Líquido</option>
+            <option value="Bioestimulante">Bioestimulante</option>
+            <option value="Especial">Especial</option>
+          </select>
+        </div>
+
+        <div class="fert-filter-group">
+          <label>Etapa de crecimiento</label>
+          <select id="filterEtapa">
+            <option value="">Todas las etapas</option>
+            <option value="siembra">Siembra</option>
+            <option value="crecimiento">Crecimiento vegetativo</option>
+            <option value="floracion">Floración</option>
+            <option value="fructificacion">Fructificación</option>
+            <option value="todo">Todo el ciclo</option>
+          </select>
+        </div>
+
+        <div class="fert-filter-group">
+          <label>Objetivo</label>
+          <select id="filterObjetivo">
+            <option value="">Todos los objetivos</option>
+            <option value="base">Fertilización base</option>
+            <option value="crecimiento">Estimular crecimiento</option>
+            <option value="floracion">Mejorar floración</option>
+            <option value="frutos">Mejorar frutos</option>
+            <option value="raices">Desarrollo radicular</option>
+            <option value="correccion">Corregir deficiencias</option>
+          </select>
+        </div>
+
+        <div class="fert-nutrients">
+          <div class="fn-title">Nutrientes</div>
+          <label class="fert-nutrient-item"><input type="checkbox" value="N" onchange="aplicarFiltros()"> Nitrógeno (N)</label>
+          <label class="fert-nutrient-item"><input type="checkbox" value="P" onchange="aplicarFiltros()"> Fósforo (P)</label>
+          <label class="fert-nutrient-item"><input type="checkbox" value="K" onchange="aplicarFiltros()"> Potasio (K)</label>
+          <label class="fert-nutrient-item"><input type="checkbox" value="Ca" onchange="aplicarFiltros()"> Calcio (Ca)</label>
+          <label class="fert-nutrient-item"><input type="checkbox" value="Mg" onchange="aplicarFiltros()"> Magnesio (Mg)</label>
+          <label class="fert-nutrient-item"><input type="checkbox" value="micro" onchange="aplicarFiltros()"> Micronutrientes</label>
+        </div>
+
+        <button class="fert-filter-clear" onclick="limpiarFiltros()"><i class="fas fa-undo-alt"></i> Limpiar filtros</button>
+      </aside>
+
+      <!-- CENTER: PRODUCTS -->
+      <section class="fert-products" id="fertProducts">
+        <div class="fert-products-header">
+          <h5>Fertilizantes recomendados <span id="fertTotalCount">(0)</span></h5>
+          <select id="sortOrder" onchange="aplicarFiltros()">
+            <option value="relevancia">Ordenar por: Relevancia</option>
+            <option value="nombre">Nombre A-Z</option>
+            <option value="nombre-desc">Nombre Z-A</option>
+          </select>
+        </div>
+
+        <div class="fert-count" id="fertCount"></div>
+        <div id="fertList"></div>
+        <div class="fert-pagination" id="fertPagination"></div>
+      </section>
+
+      <!-- RIGHT: WIDGETS -->
+      <aside class="fert-sidebar">
+        <div class="fert-widget top">
+          <h6><i class="fas fa-compass"></i> Guía rápida de aplicación</h6>
+          <div class="guide-step">
+            <div class="gs-num">1</div>
+            <div class="gs-body">
+              <strong>Análisis de suelo</strong>
+              <span>Conoce las necesidades del cultivo</span>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="gs-num">2</div>
+            <div class="gs-body">
+              <strong>Selección del fertilizante</strong>
+              <span>Elige el fertilizante adecuado</span>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="gs-num">3</div>
+            <div class="gs-body">
+              <strong>Dosificación correcta</strong>
+              <span>Aplica la dosis recomendada</span>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="gs-num">4</div>
+            <div class="gs-body">
+              <strong>Momento de aplicación</strong>
+              <span>En la etapa adecuada</span>
+            </div>
+          </div>
+          <div class="guide-step">
+            <div class="gs-num">5</div>
+            <div class="gs-body">
+              <strong>Seguimiento</strong>
+              <span>Monitorea resultados</span>
+            </div>
+          </div>
+          <a href="{{ url_for('analisis.biblioteca') }}" class="guide-btn"><i class="fas fa-book-open"></i> Ver guía completa</a>
+        </div>
+
+        <div class="fert-widget mid">
+          <h6><i class="fas fa-calculator"></i> Calculadora de dosis</h6>
+          <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Calcula la dosis recomendada para tu cultivo</p>
+          <div class="calc-group">
+            <label>Cultivo</label>
+            <select id="calcCultivo">
+              <option value="tomate">Tomate</option>
+              <option value="papa">Papa</option>
+              <option value="maiz">Maíz</option>
+              <option value="cafe">Café</option>
+              <option value="palta">Palta</option>
+              <option value="hortalizas">Hortalizas</option>
+            </select>
+          </div>
+          <div class="calc-group">
+            <label>Área (ha)</label>
+            <input type="number" id="calcArea" placeholder="Ej: 1.0" step="0.1" min="0">
+          </div>
+          <button class="calc-btn" onclick="calcularDosis()"><i class="fas fa-calculator"></i> Calcular dosis</button>
+          <div class="calc-result" id="calcResult"></div>
+        </div>
+
+        <div class="fert-widget" style="top:calc(92px + 310px)">
+          <h6><i class="fas fa-newspaper"></i> Artículos recomendados</h6>
+          <div class="article-item">
+            <div class="ai-icon"><i class="fas fa-seedling"></i></div>
+            <span class="ai-text">Guía de fertilización para tomate</span>
+            <i class="fas fa-chevron-right ai-arrow"></i>
+          </div>
+          <div class="article-item">
+            <div class="ai-icon"><i class="fas fa-leaf"></i></div>
+            <span class="ai-text">Fertilización orgánica vs química</span>
+            <i class="fas fa-chevron-right ai-arrow"></i>
+          </div>
+          <div class="article-item">
+            <div class="ai-icon"><i class="fas fa-mountain"></i></div>
+            <span class="ai-text">Cómo mejorar la calidad del suelo</span>
+            <i class="fas fa-chevron-right ai-arrow"></i>
+          </div>
+          <div class="article-item">
+            <div class="ai-icon"><i class="fas fa-microscope"></i></div>
+            <span class="ai-text">Micronutrientes esenciales para cultivos</span>
+            <i class="fas fa-chevron-right ai-arrow"></i>
+          </div>
+          <a href="{{ url_for('analisis.biblioteca') }}" class="articles-link"><i class="fas fa-external-link-alt"></i> Ver todos los artículos</a>
+        </div>
+      </aside>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="dash-footer">
+    <div>© 2026 CelesteAI - Inteligencia Artificial para la Agricultura</div>
+    <div class="df-right">
+      <a href="#">Términos de uso</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Contacto</a>
+    </div>
+  </footer>
+</main>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────
+var PRODUCTOS = [
+  { id:'p1', nombre:'NPK Balanceado 20-20-20', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'🧪', descripcion:'Fertilizante balanceado para todas las etapas del cultivo.', composicion:'N 20% · P 20% · K 20% · Micro', cultivos:['Tomate','Papa','Maíz','Café','Palta','Hortalizas'], etapa:'todo', dosis:'2-3 kg/ha', objetivo:'base' },
+  { id:'p2', nombre:'Humus de Lombriz', tipo:'Orgánico', categoria:'organico', presentacion:'Sólido', icono:'🪱', descripcion:'Mejora la estructura del suelo y aporta nutrientes esenciales de forma natural.', composicion:'N 2% · P 1.5% · K 1.2% · MO 60%', cultivos:['Tomate','Papa','Hortalizas','Frutales','Palta'], etapa:'todo', dosis:'3-5 kg/m²', objetivo:'base' },
+  { id:'p3', nombre:'Urea 46% N', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'⚗️', descripcion:'Fertilizante nitrogenado de rápida absorción para crecimiento vegetativo.', composicion:'N 46%', cultivos:['Maíz','Papa','Hortalizas','Cereales'], etapa:'crecimiento', dosis:'1-2 kg/ha', objetivo:'crecimiento' },
+  { id:'p4', nombre:'Fertilizante Foliar Multi-Micro', tipo:'Foliar', categoria:'foliar', presentacion:'Líquido', icono:'🧴', descripcion:'Aporta micronutrientes esenciales para prevenir deficiencias y mejorar calidad.', composicion:'Fe 5% · Zn 3% · Mn 2% · Cu 1% · B 1% · Mo 0.1%', cultivos:['Tomate','Papa','Frutales','Hortalizas','Café'], etapa:'crecimiento', dosis:'2-3 cc/L', objetivo:'correccion' },
+  { id:'p5', nombre:'Roca Fosfórica', tipo:'Orgánico', categoria:'organico', presentacion:'Polvo', icono:'🪨', descripcion:'Fuente natural de fósforo para desarrollo radicular y floración.', composicion:'P 28% · Ca 35% · Micro', cultivos:['Papa','Maíz','Frutales','Legumbres','Palta'], etapa:'siembra', dosis:'100-150 kg/ha', objetivo:'raices' },
+  { id:'p6', nombre:'Fosfato Diamónico (DAP)', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'🧪', descripcion:'Fuente concentrada de fósforo y nitrógeno para desarrollo radicular.', composicion:'N 18% · P 46%', cultivos:['Papa','Maíz','Frutales','Cereales'], etapa:'siembra', dosis:'100-150 kg/ha', objetivo:'raices' },
+  { id:'p7', nombre:'Cloruro de Potasio', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'⚗️', descripcion:'Alto contenido de potasio para mejorar calidad de frutos y resistencia.', composicion:'K 60%', cultivos:['Papa','Tomate','Frutales','Palta'], etapa:'floracion', dosis:'1-2 kg/ha', objetivo:'frutos' },
+  { id:'p8', nombre:'Compost Orgánico', tipo:'Orgánico', categoria:'organico', presentacion:'Sólido', icono:'🌱', descripcion:'Abono orgánico rico en materia orgánica y microorganismos benéficos.', composicion:'N 1.5% · P 1% · K 1.2% · MO 50%', cultivos:['Tomate','Papa','Maíz','Frutales','Hortalizas','Café','Palta'], etapa:'todo', dosis:'5-10 kg/m²', objetivo:'base' },
+  { id:'p9', nombre:'Extracto de Algas Marinas', tipo:'Bioestimulante', categoria:'especial', presentacion:'Líquido', icono:'🌿', descripcion:'Bioestimulante natural que fortalece la planta frente a estrés hídrico y térmico.', composicion:'Auxinas · Citoquininas · Aminoácidos · K 2%', cultivos:['Tomate','Frutales','Hortalizas','Palta','Café'], etapa:'floracion', dosis:'2-3 L/ha', objetivo:'floracion' },
+  { id:'p10', nombre:'Ácidos Húmicos', tipo:'Bioestimulante', categoria:'especial', presentacion:'Líquido', icono:'🧪', descripcion:'Mejoradores de suelo que aumentan la disponibilidad de nutrientes.', composicion:'AH 12% · AF 3% · K 5%', cultivos:['Papa','Maíz','Frutales','Hortalizas','Café'], etapa:'siembra', dosis:'1-2 L/ha', objetivo:'base' },
+  { id:'p11', nombre:'Sulfato de Magnesio', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'⚗️', descripcion:'Corrige deficiencias de magnesio y mejora la fotosíntesis.', composicion:'Mg 9.6% · S 13%', cultivos:['Papa','Tomate','Maíz','Frutales','Palta'], etapa:'crecimiento', dosis:'1-2 kg/ha', objetivo:'correccion' },
+  { id:'p12', nombre:'Nitrato de Calcio', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'⚗️', descripcion:'Aporta calcio y nitrógeno para fortalecer paredes celulares y prevenir pudrición.', composicion:'N 15.5% · Ca 26%', cultivos:['Tomate','Papa','Frutales','Hortalizas','Palta'], etapa:'floracion', dosis:'1-2 kg/ha', objetivo:'frutos' },
+  { id:'p13', nombre:'Fertilizante Líquido 10-30-10', tipo:'Foliar', categoria:'liquido', presentacion:'Líquido', icono:'🧴', descripcion:'Fertilizante líquido de rápida absorción para estimular floración y fructificación.', composicion:'N 10% · P 30% · K 10% · Micro', cultivos:['Tomate','Papa','Frutales','Hortalizas'], etapa:'floracion', dosis:'3-5 cc/L', objetivo:'floracion' },
+  { id:'p14', nombre:'Guano de Isla', tipo:'Orgánico', categoria:'organico', presentacion:'Polvo', icono:'🪱', descripcion:'Fertilizante orgánico natural con alto contenido de NPK y microelementos.', composicion:'N 12% · P 11% · K 2.5% · Micro', cultivos:['Papa','Maíz','Hortalizas','Cereales','Legumbres'], etapa:'crecimiento', dosis:'1-2 kg/m²', objetivo:'crecimiento' },
+  { id:'p15', nombre:'Sulfato de Potasio (SOP)', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'⚗️', descripcion:'Fuente de potasio sin cloro, ideal para cultivos sensibles y fertirriego.', composicion:'K 50% · S 18%', cultivos:['Tomate','Papa','Frutales','Palta','Café','Hortalizas'], etapa:'floracion', dosis:'1-2 kg/ha', objetivo:'frutos' },
+  { id:'p16', nombre:'Fertilizante NPK 15-15-15', tipo:'Químico', categoria:'quimico', presentacion:'Granulado', icono:'🧪', descripcion:'Fertilizante granulado de uso general para todo tipo de cultivos.', composicion:'N 15% · P 15% · K 15% · Micro', cultivos:['Tomate','Papa','Maíz','Frutales','Hortalizas','Café','Palta'], etapa:'todo', dosis:'2-4 kg/ha', objetivo:'base' },
+  { id:'p17', nombre:'Fertilizante Foliar Nitro-K', tipo:'Foliar', categoria:'foliar', presentacion:'Polvo soluble', icono:'🧴', descripcion:'Fertilizante foliar con alto contenido de nitrógeno y potasio para estrés.', composicion:'N 30% · K 20% · Micro', cultivos:['Maíz','Papa','Hortalizas','Cereales'], etapa:'crecimiento', dosis:'3-5 g/L', objetivo:'crecimiento' },
+  { id:'p18', nombre:'Abono Líquido Orgánico', tipo:'Orgánico', categoria:'liquido', presentacion:'Líquido', icono:'🌱', descripcion:'Fertilizante orgánico líquido para aplicación en fertirriego y foliar.', composicion:'N 3% · P 2% · K 4% · MO 20% · Aminoácidos', cultivos:['Tomate','Hortalizas','Frutales','Palta','Café'], etapa:'todo', dosis:'5-10 L/ha', objetivo:'base' },
+  { id:'p19', nombre:'Calcio-Boro', tipo:'Foliar', categoria:'foliar', presentacion:'Líquido', icono:'🧴', descripcion:'Suplemento de calcio y boro para prevenir deficiencias y mejorar calidad de frutos.', composicion:'Ca 10% · B 1%', cultivos:['Tomate','Frutales','Palta'], etapa:'floracion', dosis:'2-3 cc/L', objetivo:'floracion' },
+  { id:'p20', nombre:'Micorrizas + Trichoderma', tipo:'Bioestimulante', categoria:'especial', presentacion:'Polvo', icono:'🍄', descripcion:'Hongos benéficos que mejoran la absorción de nutrientes y protegen raíces.', composicion:'Micorrizas 200 esporas/g · Trichoderma 1×10⁶ UFC/g', cultivos:['Tomate','Papa','Maíz','Frutales','Hortalizas','Café','Palta'], etapa:'siembra', dosis:'5-10 g/planta', objetivo:'raices' },
+];
+
+// Category nutrient keywords for filtering
+// "N" -> high nitrogen, "P" -> high phosphorus, "K" -> high potassium, "Ca" -> calcium, "Mg" -> magnesium
+var PRODUCT_NUTRIENTS = {
+  p1: ['N','P','K'], p2: ['N','P','K'], p3: ['N'], p4: ['micro'], p5: ['P','Ca'],
+  p6: ['N','P'], p7: ['K'], p8: ['N','P','K'], p9: ['K'], p10: ['K'],
+  p11: ['Mg'], p12: ['N','Ca'], p13: ['N','P','K','micro'], p14: ['N','P','K'],
+  p15: ['K'], p16: ['N','P','K','micro'], p17: ['N','K','micro'], p18: ['N','P','K'],
+  p19: ['Ca'], p20: ['micro']
+};
+
+// Stage mapping
+var ETAPA_MAP = {
+  siembra: ['siembra'], crecimiento: ['crecimiento'], floracion: ['floracion'], fructificacion: ['floracion','frutos'], todo: ['todo']
+};
+
+var perPage = 8;
+var currentPage = 1;
+var filtered = [];
+
+// ── RENDER ────────────────────────────────────────────────
+function badgeClass(tipo) {
+  var t = tipo.toLowerCase();
+  if (t.indexOf('org') !== -1) return 'organico';
+  if (t.indexOf('quím') !== -1 || t.indexOf('quim') !== -1) return 'quimico';
+  if (t.indexOf('fol') !== -1) return 'foliar';
+  if (t === 'especial' || t.indexOf('bio') !== -1) return 'especial';
+  return '';
+}
+
+function renderProductos(lista) {
+  var el = document.getElementById('fertList');
+  if (!lista.length) {
+    el.innerHTML = '<div class="fert-empty"><i class="fas fa-seedling"></i><h5>Sin resultados</h5><p>Intenta con otros filtros o categoría</p></div>';
+    return;
+  }
+  el.innerHTML = lista.map(function(p){
+    var comp = p.composicion ? '<div class="fpm-item"><i class="fas fa-flask"></i> <strong>Composición:</strong> '+p.composicion+'</div>' : '';
+    var cropsHtml = p.cultivos.map(function(c){return '<span class="crop-tag">'+c+'</span>'}).join('');
+    return '<div class="fert-product">' +
+      '<div class="fp-img">'+p.icono+'</div>' +
+      '<div class="fp-body">' +
+        '<div class="fp-top"><h6>'+p.nombre+'</h6><span class="fp-badge '+badgeClass(p.tipo)+'">'+p.tipo+'</span></div>' +
+        '<div class="fp-desc">'+p.descripcion+'</div>' +
+        '<div class="fp-meta">' +
+          '<div class="fpm-item"><i class="fas fa-weight"></i> <strong>Dosis:</strong> '+p.dosis+'</div>' +
+          '<div class="fpm-item"><i class="fas fa-box"></i> <strong>Presentación:</strong> '+p.presentacion+'</div>' +
+          comp +
+        '</div>' +
+        '<div class="fp-bottom">' +
+          '<div class="fp-crops">'+cropsHtml+'</div>' +
+          '<button class="fp-btn" onclick="verDetalle(\''+p.id+'\')"><i class="fas fa-eye"></i> Ver detalles</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPaginacion(total) {
+  var pages = Math.ceil(total / perPage);
+  var el = document.getElementById('fertPagination');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  var html = '';
+  html += '<span class="fp-item fp-prevnext" onclick="irPagina('+(currentPage-1)+')"'+(currentPage<=1?' style="opacity:0.3;pointer-events:none"':'')+'><i class="fas fa-chevron-left"></i> Anterior</span>';
+  for (var i=1; i<=pages; i++) {
+    if (pages>7 && i>2 && i<pages-1 && Math.abs(i-currentPage)>2) {
+      if (html.slice(-12) !== '"..."></span>') html += '<span class="fp-item fp-dots">...</span>';
+      continue;
+    }
+    html += '<span class="fp-item '+(i===currentPage?'active':'')+'" onclick="irPagina('+i+')">'+i+'</span>';
+  }
+  html += '<span class="fp-item fp-prevnext" onclick="irPagina('+(currentPage+1)+')"'+(currentPage>=pages?' style="opacity:0.3;pointer-events:none"':'')+'>Siguiente <i class="fas fa-chevron-right"></i></span>';
+  el.innerHTML = html;
+}
+
+// ── FILTERS ───────────────────────────────────────────────
+function aplicarFiltros() {
+  var cat = document.querySelector('#fertCats .fert-cat.active');
+  var categoria = cat ? cat.getAttribute('data-cat') : 'todos';
+  var cultivo = document.getElementById('filterCultivo').value;
+  var tipo = document.getElementById('filterTipo').value;
+  var etapa = document.getElementById('filterEtapa').value;
+  var objetivo = document.getElementById('filterObjetivo').value;
+  var nutrientChecks = document.querySelectorAll('.fert-nutrients input[type=checkbox]:checked');
+  var nutrientes = Array.from(nutrientChecks).map(function(c){return c.value});
+
+  var f = PRODUCTOS.slice();
+
+  // Category tab filter
+  if (categoria !== 'todos') {
+    f = f.filter(function(p){ return p.categoria === categoria; });
+  }
+
+  if (cultivo) f = f.filter(function(p){ return p.cultivos.indexOf(cultivo) !== -1; });
+  if (tipo) f = f.filter(function(p){ return p.tipo.indexOf(tipo) !== -1 || p.tipo.toLowerCase().indexOf(tipo.toLowerCase()) !== -1; });
+  if (etapa) f = f.filter(function(p){ return p.etapa === etapa || p.etapa === 'todo'; });
+  if (objetivo) f = f.filter(function(p){ return p.objetivo === objetivo; });
+  if (nutrientes.length) {
+    f = f.filter(function(p){
+      var pn = PRODUCT_NUTRIENTS[p.id] || [];
+      return nutrientes.every(function(n){ return pn.indexOf(n) !== -1; });
+    });
+  }
+
+  // Sort
+  var sort = document.getElementById('sortOrder').value;
+  if (sort === 'nombre') f.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+  else if (sort === 'nombre-desc') f.sort(function(a,b){ return b.nombre.localeCompare(a.nombre); });
+  // else relevancia: keep original order
+
+  filtered = f;
+  currentPage = 1;
+  mostrarPagina();
+}
+
+function mostrarPagina() {
+  var total = filtered.length;
+  document.getElementById('fertTotalCount').textContent = '('+total+')';
+  document.getElementById('fertCount').textContent = total+' fertilizante'+(total!==1?'s':'')+' disponible'+(total!==1?'s':'');
+  var start = (currentPage-1)*perPage;
+  var end = Math.min(start+perPage, total);
+  var pageItems = filtered.slice(start, end);
+  renderProductos(pageItems);
+  renderPaginacion(total);
+}
+
+function irPagina(p) {
+  var total = filtered.length;
+  var pages = Math.ceil(total/perPage);
+  if (p<1 || p>pages) return;
+  currentPage = p;
+  mostrarPagina();
+  document.querySelector('#fertProducts').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function limpiarFiltros() {
+  document.getElementById('filterCultivo').value = '';
+  document.getElementById('filterTipo').value = '';
+  document.getElementById('filterEtapa').value = '';
+  document.getElementById('filterObjetivo').value = '';
+  document.querySelectorAll('.fert-nutrients input[type=checkbox]').forEach(function(c){c.checked=false});
+  document.getElementById('sortOrder').value = 'relevancia';
+  // Reset category to "todos"
+  document.querySelectorAll('#fertCats .fert-cat').forEach(function(el){el.classList.remove('active')});
+  document.querySelector('#fertCats .fert-cat[data-cat="todos"]').classList.add('active');
+  aplicarFiltros();
+}
+
+// ── CATEGORY CLICKS ───────────────────────────────────────
+document.querySelectorAll('#fertCats .fert-cat').forEach(function(el){
+  el.addEventListener('click', function(){
+    document.querySelectorAll('#fertCats .fert-cat').forEach(function(e){e.classList.remove('active')});
+    this.classList.add('active');
+    aplicarFiltros();
+  });
+});
+
+// ── FILTER CHANGE EVENTS ──────────────────────────────────
+document.querySelectorAll('#filterCultivo, #filterTipo, #filterEtapa, #filterObjetivo').forEach(function(el){
+  el.addEventListener('change', aplicarFiltros);
+});
+
+// ── CALCULATOR ────────────────────────────────────────────
+function calcularDosis() {
+  var cultivo = document.getElementById('calcCultivo').value;
+  var area = parseFloat(document.getElementById('calcArea').value) || 0;
+  if (area <= 0) {
+    document.getElementById('calcResult').textContent = '⚠️ Ingresa un área válida en hectáreas.';
+    document.getElementById('calcResult').className = 'calc-result show';
+    return;
+  }
+  var dosisBase = { tomate:180, papa:200, maiz:160, cafe:150, palta:120, hortalizas:140 };
+  var dosis = dosisBase[cultivo] || 160;
+  var total = (dosis * area).toFixed(0);
+  var nombres = { tomate:'Tomate', papa:'Papa', maiz:'Maíz', cafe:'Café', palta:'Palta', hortalizas:'Hortalizas' };
+  document.getElementById('calcResult').innerHTML = '<strong>Resultado:</strong><br>📊 Cultivo: '+nombres[cultivo]+'<br>📐 Área: '+area+' ha<br>🧪 Dosis recomendada: <strong>'+total+' kg</strong> de NPK 20-20-20<br><small style="color:var(--muted)">* Dosis estimada, consulta a un especialista.</small>';
+  document.getElementById('calcResult').className = 'calc-result show';
+}
+
+// ── VER DETALLE ───────────────────────────────────────────
+function verDetalle(id) {
+  var p = PRODUCTOS.find(function(x){return x.id===id});
+  if (!p) return;
+  alert('📋 '+p.nombre+'\n\nTipo: '+p.tipo+'\nComposición: '+p.composicion+'\nDosis: '+p.dosis+'\nPresentación: '+p.presentacion+'\nCultivos: '+p.cultivos.join(', ')+'\n\nDescripción:\n'+p.descripcion);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+aplicarFiltros();
+</script>
+
+</body>
+</html>

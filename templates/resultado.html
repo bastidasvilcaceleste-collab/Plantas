@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultado — CelesteAI</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+body{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.rw{width:100%;max-width:560px;animation:up .5s ease}
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="rw">
+  <div class="card" style="padding:0;border:none;overflow:hidden">
+    <div style="padding:28px 28px 0">
+      <div class="result-crop-badge">🌱 Resultado del análisis</div>
+    </div>
+    <div style="padding:0 28px" id="resultContainer"></div>
+    <div style="padding:20px 28px 28px;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{{ url_for('analisis.dashboard') }}" class="btn btn-outline"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
+      <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="fas fa-redo me-1"></i> Nuevo análisis</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const NO_RECONOCIDA_DESC = 'No se pudo identificar la planta con suficiente confianza. Intenta con una foto más clara.';
+const NO_RECONOCIDA_TRAT = 'Toma una nueva foto con buena iluminación y repite el análisis.';
+const DESCRIPCIONES = {
+"Resultado_poco_confiable":NO_RECONOCIDA_DESC,
+"Apple___Apple_scab":"Sarna del manzano. Hongo que causa manchas oscuras y agrietadas en hojas y frutos.","Apple___Black_rot":"Podredumbre negra. Hongo que oscurece y momifica los frutos.","Apple___Cedar_apple_rust":"Roya del manzano. Manchas anaranjadas con puntos negros.","Apple___healthy":"Manzano saludable. Hojas verdes y aspecto vigoroso.","Blueberry___healthy":"Arándano saludable. Planta vigorosa.","Cherry_(including_sour)___Powdery_mildew":"Mildiú polvoriento. Polvo blanco en hojas.","Cherry_(including_sour)___healthy":"Cerezo saludable.","Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot":"Mancha gris del maíz. Lesiones alargadas gris-marrón.","Corn_(maize)___Common_rust_":"Roya común del maíz. Pústulas marrón rojizo.","Corn_(maize)___Northern_Leaf_Blight":"Tizón foliar del maíz. Lesiones marrones.","Corn_(maize)___healthy":"Maíz saludable.","Grape___Black_rot":"Podredumbre negra de la vid. Manchas y momificación.","Grape___Esca_(Black_Measles)":"Yesca de la vid. Decaimiento progresivo.","Grape___Leaf_blight_(Isariopsis_Leaf_Spot)":"Tizón foliar. Manchas marrones.","Grape___healthy":"Vid saludable.","Orange___Haunglongbing_(Citrus_greening)":"HLB. Bacteriosis grave transmitida por insectos.","Peach___Bacterial_spot":"Mancha bacteriana. Manchas oscuras.","Peach___healthy":"Durazno saludable.","Pepper,_bell___Bacterial_spot":"Mancha bacteriana del pimiento.","Pepper,_bell___healthy":"Pimiento saludable.","Potato___Early_blight":"Tizón temprano. Manchas concéntricas.","Potato___Late_blight":"Tizón tardío. Enfermedad grave.","Potato___healthy":"Papa saludable.","Raspberry___healthy":"Frambuesa saludable.","Soybean___healthy":"Soya saludable.","Squash___Powdery_mildew":"Mildiú polvoriento de la calabaza.","Strawberry___Leaf_scorch":"Quemadura foliar de la fresa.","Strawberry___healthy":"Fresa saludable.","Tomato___Bacterial_spot":"Mancha bacteriana del tomate.","Tomato___Early_blight":"Tizón temprano del tomate.","Tomato___Late_blight":"Tizón tardío del tomate.","Tomato___Leaf_Mold":"Moho foliar. Manchas amarillas.","Tomato___Septoria_leaf_spot":"Mancha septoriosa.","Tomato___Spider_mites Two-spotted_spider_mite":"Araña roja.","Tomato___Target_Spot":"Mancha objetivo.","Tomato___Tomato_Yellow_Leaf_Curl_Virus":"Virus del rizado amarillo.","Tomato___Tomato_mosaic_virus":"Virus del mosaico.","Tomato___healthy":"Tomate saludable."
+};
+const TRATAMIENTOS = {
+"Resultado_poco_confiable":NO_RECONOCIDA_TRAT,
+"Apple___Apple_scab":"Aplica fungicida de cobre cada 7-14 días. Poda ramas afectadas.","Apple___Black_rot":"Elimina frutos momificados. Aplica fungicida.","Apple___Cedar_apple_rust":"Elimina enebros cercanos. Fungicida en primavera.","Apple___healthy":"Riego moderado y fertilización.","Blueberry___healthy":"Suelo ácido pH 4.5-5.5.","Cherry_(including_sour)___Powdery_mildew":"Aplica azufre. Poda para ventilar.","Cherry_(including_sour)___healthy":"Riego y fertilización.","Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot":"Rota cultivos. Fungicida foliar.","Corn_(maize)___Common_rust_":"Variedades resistentes. Fungicida.","Corn_(maize)___Northern_Leaf_Blight":"Rotación. Fungicida foliar.","Corn_(maize)___healthy":"Fertilización balanceada.","Grape___Black_rot":"Elimina racimos. Fungicida preventivo.","Grape___Esca_(Black_Measles)":"Poda hasta madera sana.","Grape___Leaf_blight_(Isariopsis_Leaf_Spot)":"Elimina hojas. Ventila.","Grape___healthy":"Poda y riego moderado.","Orange___Haunglongbing_(Citrus_greening)":"Sin cura. Controla vector. Elimina árboles.","Peach___Bacterial_spot":"Cobre en otoño e invierno. Poda.","Peach___healthy":"Fertilización y poda.","Pepper,_bell___Bacterial_spot":"Semillas certificadas. Cobre. Rota.","Pepper,_bell___healthy":"Riego y fertilización.","Potato___Early_blight":"Rota cultivos 3-4 años. Fungicida.","Potato___Late_blight":"Fungicida sistémico URGENTE.","Potato___healthy":"Semilla certificada.","Raspberry___healthy":"Poda anual.","Soybean___healthy":"Fósforo y potasio.","Squash___Powdery_mildew":"Azufre. Ventila.","Strawberry___Leaf_scorch":"Elimina hojas.","Strawberry___healthy":"Renueva cada 2-3 años.","Tomato___Bacterial_spot":"Semillas certificadas. Cobre. Rota.","Tomato___Early_blight":"Fungicida preventivo. Poda.","Tomato___Late_blight":"Fungicida sistémico. Elimina plantas.","Tomato___Leaf_Mold":"Ventila. Reduce humedad.","Tomato___Septoria_leaf_spot":"Elimina hojas. Fungicida.","Tomato___Spider_mites Two-spotted_spider_mite":"Acaricida o jabón potásico.","Tomato___Target_Spot":"Fungicida. Mejora drenaje.","Tomato___Tomato_Yellow_Leaf_Curl_Virus":"Controla mosca blanca.","Tomato___Tomato_mosaic_virus":"Desinfecta herramientas.","Tomato___healthy":"Poda semanal. Riego constante."
+};
+
+function fmt(s){return s?s.replace(/_/g,' ').replace(/___/g,' - '):'Desconocido'}
+function desc(clase,sana){return DESCRIPCIONES[clase]||(sana?'Tu planta está saludable.':'Se detectó una posible enfermedad.')}
+function trat(clase){return TRATAMIENTOS[clase]||'Consulta con un agrónomo.'}
+function icono(clase){
+  if(clase==='Resultado_poco_confiable')return'❓';if(!clase)return'🌿';const c=clase.toLowerCase();
+  if(c.includes('apple'))return'🍎';if(c.includes('blueberry'))return'🫐';if(c.includes('cherry'))return'🍒';
+  if(c.includes('corn')||c.includes('maize'))return'🌽';if(c.includes('grape'))return'🍇';if(c.includes('orange')||c.includes('citrus'))return'🍊';
+  if(c.includes('peach'))return'🍑';if(c.includes('pepper'))return'🌶️';if(c.includes('potato'))return'🥔';
+  if(c.includes('raspberry'))return'🍇';if(c.includes('soybean'))return'🫘';if(c.includes('squash'))return'🎃';
+  if(c.includes('strawberry'))return'🍓';if(c.includes('tomato'))return'🍅';return'🌿';
+}
+
+function mostrar(){
+  var p=new URLSearchParams(window.location.search);
+  var clase=p.get('clase')||'Desconocido';
+  var conf=parseFloat(p.get('confianza')||'0');
+  var sana=(p.get('es_sana')||'false')==='true';
+  var pct=isNaN(conf)?0:(conf*100).toFixed(1);
+  var nombre=fmt(clase);var des=desc(clase,sana);var tr=trat(clase);var ico=icono(clase);
+
+  var statusClass='healthy',statusText='✓ Saludable';
+  if(clase==='Resultado_poco_confiable'){statusClass='low-confidence';statusText='⚠ Poco confiable'}
+  else if(!sana){statusClass='diseased';statusText='⚠ Enfermedad'}
+
+  document.getElementById('resultContainer').innerHTML=`
+    <div class="result-main ${statusClass}" style="margin-bottom:16px">
+      <div class="result-header">
+        <div class="result-icon ${statusClass}">${ico}</div>
+        <div>
+          <div class="result-pct ${statusClass}">${pct}%</div>
+          <span class="result-status ${statusClass}">${statusText}</span>
+        </div>
+      </div>
+      <div class="result-name">${nombre}</div>
+      <div class="result-desc">${des}</div>
+    </div>
+    <div class="result-section" style="margin-bottom:0">
+      <h6><i class="fas fa-prescription-bottle" style="color:var(--primary)"></i> Recomendaciones</h6>
+      <div class="rec-list"><div class="rec-item"><span class="rec-icon">💊</span><div class="rec-text"><strong>Tratamiento</strong><span>${tr}</span></div></div></div>
+    </div>
+  `;
+}
+mostrar();
+</script>
+</body>
+</html>

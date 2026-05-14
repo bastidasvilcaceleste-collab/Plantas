@@ -1,0 +1,33 @@
+# Environment
+.env
+.flaskenv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+web/instance/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Modelos (grandes, se descargan aparte)
+modelos_ia/ai_models/*.pth
+
+# Datasets (raw data, no se suben)
+datasets/
+
+# Documentación académica
+documentacion/

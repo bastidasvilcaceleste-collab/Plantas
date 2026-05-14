@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Historial de Análisis</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+/* ── Stat cards ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card-mod{background:var(--white);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow);border:1px solid var(--border);display:flex;align-items:center;gap:16px;transition:all .25s}
+.stat-card-mod:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+.scm-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.scm-icon.green{background:var(--primary-l);color:var(--primary)}
+.scm-icon.orange{background:var(--accent-l);color:var(--accent)}
+.scm-icon.blue{background:var(--blue-l);color:var(--blue)}
+.scm-icon.purple{background:#f3e5f5;color:#7b1fa2}
+.scm-info{flex:1;min-width:0}
+.scm-info .scm-num{font-size:1.7rem;font-weight:900;line-height:1.1}
+.scm-info .scm-label{font-size:0.78rem;color:var(--muted);font-weight:500;margin-top:1px}
+.scm-info .scm-sub{font-size:0.72rem;color:var(--muted-l);margin-top:2px}
+
+/* ── Filter bar ── */
+.filter-bar-mod{background:var(--white);border-radius:var(--radius-lg);padding:16px 20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:22px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.fbm-item{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);font-family:var(--font);font-size:0.82rem;outline:none;transition:all .2s;color:var(--dark);flex:1;min-width:140px}
+.fbm-item:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,122,61,0.1)}
+.fbm-item i{color:var(--muted-l);font-size:0.8rem}
+.fbm-item input{flex:1;border:none;outline:none;font-family:var(--font);font-size:0.82rem;color:var(--dark);background:transparent}
+.fbm-item input::placeholder{color:var(--muted-l)}
+.fbm-item select{flex:1;border:none;outline:none;font-family:var(--font);font-size:0.82rem;color:var(--dark);background:transparent;cursor:pointer}
+.fbm-clear{white-space:nowrap;padding:9px 18px;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);font-weight:600;font-size:0.82rem;cursor:pointer;transition:all .2s;font-family:var(--font);display:flex;align-items:center;gap:6px}
+.fbm-clear:hover{background:var(--danger-l)}
+
+/* ── Table ── */
+.table-wrap-mod{overflow-x:auto;margin:0}
+.table-mod{width:100%;border-collapse:collapse;min-width:920px}
+.table-mod thead th{padding:12px 16px;text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);background:var(--primary-xl);font-weight:700;border-bottom:2px solid #c8e0ce;white-space:nowrap}
+.table-mod thead th:first-child{border-radius:10px 0 0 0}
+.table-mod thead th:last-child{border-radius:0 10px 0 0}
+.table-mod tbody tr{border-bottom:1px solid var(--border-l);transition:background .15s}
+.table-mod tbody tr:last-child{border-bottom:none}
+.table-mod tbody tr:hover{background:var(--primary-xl)}
+
+/* Análisis cell */
+.td-analisis{display:flex;align-items:center;gap:12px}
+.td-analisis .tda-img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1.5px solid var(--border);flex-shrink:0;background:var(--bg)}
+.td-analisis .tda-info{flex:1;min-width:0}
+.td-analisis .tda-info .tda-name{font-weight:700;font-size:0.85rem;color:var(--dark);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-analisis .tda-info .tda-sub{font-size:0.72rem;color:var(--muted);display:block;margin-top:1px}
+
+/* Cultivo cell */
+.td-cultivo{display:flex;align-items:center;gap:8px}
+.td-cultivo .tdc-icon{font-size:1.4rem;flex-shrink:0}
+.td-cultivo .tdc-info{min-width:0}
+.td-cultivo .tdc-info .tdc-name{font-weight:600;font-size:0.82rem;display:block}
+.td-cultivo .tdc-info .tdc-sci{font-size:0.7rem;color:var(--muted);font-style:italic;display:block;margin-top:1px}
+
+/* Diagnóstico cell */
+.td-diag{min-width:0}
+.td-diag .tdd-badge{display:inline-block;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:50px;margin-bottom:3px}
+.td-diag .tdd-badge.red{background:#fee2e2;color:var(--danger);border:1px solid #fecaca}
+.td-diag .tdd-badge.green{background:var(--primary-l);color:var(--primary);border:1px solid #c8e0ce}
+.td-diag .tdd-badge.yellow{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.td-diag .tdd-sci{font-size:0.7rem;color:var(--muted);font-style:italic;display:block;margin-top:2px}
+
+/* Estado cell */
+.td-estado{display:flex;align-items:center;gap:8px}
+.td-estado .tde-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.td-estado .tde-dot.red{background:var(--danger)}
+.td-estado .tde-dot.green{background:var(--primary)}
+.td-estado .tde-dot.yellow{background:var(--warning)}
+.td-estado .tde-info{min-width:0}
+.td-estado .tde-info .tde-text{font-weight:600;font-size:0.82rem;display:block}
+.td-estado .tde-info .tde-sub{font-size:0.7rem;color:var(--muted);display:block;margin-top:1px}
+
+/* Confianza cell */
+.td-conf{min-width:80px}
+.td-conf .tdc-pct{font-weight:800;font-size:0.85rem;color:var(--primary);display:block;margin-bottom:3px}
+.td-conf .tdc-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;max-width:80px}
+.td-conf .tdc-bar .tdc-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary),#81c784);transition:width .6s ease}
+
+/* Fecha cell */
+.td-fecha{font-size:0.82rem;font-weight:500;white-space:nowrap}
+.td-fecha .tdf-time{font-size:0.72rem;color:var(--muted);display:block;margin-top:1px}
+
+/* Acción cell */
+.td-action{display:flex;align-items:center;gap:4px}
+.td-action .btn-action{padding:6px 14px;border-radius:6px;border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;font-family:var(--font);white-space:nowrap}
+.td-action .btn-action:hover{background:var(--primary-l)}
+.td-action .btn-more{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--muted);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:0.85rem;position:relative}
+.td-action .btn-more:hover{border-color:var(--primary);color:var(--primary)}
+.td-action .more-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--white);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1px solid var(--border);min-width:180px;z-index:100;padding:4px;animation:fadeIn .15s ease}
+.td-action .more-menu.open{display:block}
+.td-action .more-menu a{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:0.8rem;color:var(--dark);text-decoration:none;transition:all .15s}
+.td-action .more-menu a:hover{background:var(--primary-l);color:var(--primary)}
+
+/* ── Pagination ── */
+.pagination-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 24px 18px;border-top:1px solid var(--border);background:var(--white);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+.pb-info{font-size:0.8rem;color:var(--muted)}
+.pb-pages{display:flex;align-items:center;gap:4px}
+.pb-pages button{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--dark);font-size:0.8rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-family:var(--font)}
+.pb-pages button:hover:not(:disabled):not(.active){border-color:var(--primary);color:var(--primary)}
+.pb-pages button.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.pb-pages button:disabled{opacity:.4;cursor:not-allowed}
+.pb-pages button.pb-nav{padding:0 12px;width:auto;gap:4px;font-size:0.78rem}
+.pb-per-page{display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--muted)}
+.pb-per-page select{padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);font-family:var(--font);font-size:0.8rem;outline:none;cursor:pointer;background:var(--white);color:var(--dark)}
+
+/* ── Empty state in card ── */
+.empty-mod{text-align:center;padding:56px 24px}
+.empty-mod i{font-size:3rem;color:#d0dfd4;margin-bottom:12px;display:block}
+.empty-mod h5{font-weight:700;font-size:1rem;margin-bottom:4px}
+.empty-mod p{color:var(--muted);font-size:0.85rem;margin-bottom:16px}
+
+/* ── Table inside card ── */
+.card-table{border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);background:var(--white);margin-bottom:28px}
+
+/* ── Responsive ── */
+@media(max-width:1200px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr}
+  .filter-bar-mod{flex-direction:column}
+  .fbm-item{width:100%}
+  .pagination-bar{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+{% include '_sidebar.html' %}
+
+<main class="main">
+  <div class="main-inner">
+
+    <!-- Header -->
+    <div class="page-hdr">
+      <div>
+        <h1>Historial de Análisis</h1>
+        <p>Revisa todos los análisis que has realizado a tus cultivos</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="{{ url_for('analisis.analizar') }}" class="btn btn-primary">
+          <i class="fas fa-microscope me-1"></i> Nuevo análisis
+        </a>
+        <button class="btn btn-outline" onclick="exportarHistorial()">
+          <i class="fas fa-download me-1"></i> Exportar historial
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="stats-row">
+      <div class="stat-card-mod">
+        <div class="scm-icon green"><i class="fas fa-chart-line"></i></div>
+        <div class="scm-info">
+          <div class="scm-num">{{ total }}</div>
+          <div class="scm-label">Análisis realizados</div>
+          <div class="scm-sub">Este mes: {{ total_mes }}</div>
+        </div>
+      </div>
+      <div class="stat-card-mod">
+        <div class="scm-icon orange"><i class="fas fa-virus"></i></div>
+        <div class="scm-info">
+          <div class="scm-num">{{ enfermas }}</div>
+          <div class="scm-label">Enfermedades detectadas</div>
+          <div class="scm-sub">Este mes: {{ enfermas_mes }}</div>
+        </div>
+      </div>
+      <div class="stat-card-mod">
+        <div class="scm-icon blue"><i class="fas fa-heart"></i></div>
+        <div class="scm-info">
+          <div class="scm-num">{{ sanas }}</div>
+          <div class="scm-label">Plantas saludables</div>
+          <div class="scm-sub">Este mes: {{ sanas_mes }}</div>
+        </div>
+      </div>
+      <div class="stat-card-mod">
+        <div class="scm-icon purple"><i class="fas fa-brain"></i></div>
+        <div class="scm-info">
+          <div class="scm-num">{{ (precision_promedio * 100)|round(1) }}%</div>
+          <div class="scm-label">Precisión promedio IA</div>
+          <div class="scm-sub">Este mes: {{ (precision_mes * 100)|round(1) if precision_mes else '—' }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar-mod" id="filterBar">
+      <div class="fbm-item">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Buscar por cultivo, enfermedad o síntoma..." oninput="aplicarFiltros()">
+      </div>
+      <div class="fbm-item">
+        <i class="fas fa-seedling"></i>
+        <select id="filterCultivo" onchange="aplicarFiltros()">
+          <option value="">Todos los cultivos</option>
+        </select>
+      </div>
+      <div class="fbm-item">
+        <i class="fas fa-tag"></i>
+        <select id="filterEstado" onchange="aplicarFiltros()">
+          <option value="">Todos los estados</option>
+          <option value="sana">Saludable</option>
+          <option value="enferma">Enfermedad</option>
+          <option value="poco">Poco confiable</option>
+        </select>
+      </div>
+      <div class="fbm-item">
+        <i class="fas fa-calendar"></i>
+        <select id="filterFecha" onchange="aplicarFiltros()">
+          <option value="">Rango de fechas</option>
+          <option value="7">Última semana</option>
+          <option value="30">Último mes</option>
+          <option value="90">Últimos 3 meses</option>
+        </select>
+      </div>
+      <button class="fbm-clear" onclick="limpiarFiltros()"><i class="fas fa-times"></i> Limpiar</button>
+    </div>
+
+    <!-- Table -->
+    {% if historial %}
+    <div class="card-table">
+      <div class="table-wrap-mod">
+        <table class="table-mod" id="historialTable">
+          <thead>
+            <tr>
+              <th style="min-width:200px">Análisis</th>
+              <th style="min-width:140px">Cultivo</th>
+              <th style="min-width:170px">Diagnóstico</th>
+              <th style="min-width:130px">Estado</th>
+              <th style="min-width:100px">Confianza</th>
+              <th style="min-width:110px">Fecha y hora</th>
+              <th style="min-width:100px">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for item in historial %}
+            {% set parts = item.clase.split('___') if item.clase and '___' in item.clase else ['', ''] %}
+            {% set crop_raw = parts[0] %}
+            {% set disease_raw = parts[1] if parts|length > 1 else '' %}
+
+            {% set cd = crop_data.get(crop_raw, {'icon': '🌿', 'name': crop_raw.replace('_',' '), 'sci': ''}) %}
+            {% set disease_name = disease_raw.replace('_',' ') if disease_raw else '' %}
+
+            {% set dsci = disease_sci.get(disease_raw, '') %}
+            {% set is_low = item.clase in ('Resultado_poco_confiable','No_reconocida') %}
+            {% set is_sana = item.es_sana and not is_low %}
+
+            {% if is_low %}
+              {% set estado_class = 'yellow' %}
+              {% set estado_text = 'Poco confiable' %}
+              {% set estado_sub = 'Requiere repetir' %}
+            {% elif is_sana %}
+              {% set estado_class = 'green' %}
+              {% set estado_text = 'Saludable' %}
+              {% set estado_sub = 'Sin tratamiento' %}
+            {% else %}
+              {% set estado_class = 'red' %}
+              {% set estado_text = 'Enfermedad' %}
+              {% set estado_sub = 'Requiere tratamiento' %}
+            {% endif %}
+
+            {% if is_low %}
+              {% set badge_class = 'yellow' %}
+              {% set badge_text = '⚠ Poco confiable' %}
+            {% elif is_sana %}
+              {% set badge_class = 'green' %}
+              {% set badge_text = '✓ Saludable' %}
+            {% else %}
+              {% set badge_class = 'red' %}
+              {% set badge_text = '⚠ Enfermedad' %}
+            {% endif %}
+
+            {% set pct = (item.confianza * 100)|round(1) %}
+            {% set fecha_str = item.fecha.strftime('%d/%m/%Y') if item.fecha else '—' %}
+            {% set hora_str = item.fecha.strftime('%I:%M %p').lower() if item.fecha else '—' %}
+            {% set full_clase_lower = item.clase.lower() if item.clase else '' %}
+
+            <tr class="hist-row"
+                data-estado="{{ 'poco' if is_low else ('sana' if is_sana else 'enferma') }}"
+                data-cultivo="{{ cd.name|lower }}"
+                data-diagnostico="{{ ((cd.name + ' ' + disease_name))|lower }}"
+                data-fecha="{{ item.fecha.strftime('%Y%m%d') if item.fecha else '0' }}"
+                data-confianza="{{ pct }}">
+              <!-- Análisis -->
+              <td>
+                <div class="td-analisis">
+                  {% if item.imagen %}
+                  <img src="{{ item.imagen }}" alt="" class="tda-img">
+                  {% else %}
+                  <div class="tda-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--primary-xl);color:var(--primary)">{{ cd.icon }}</div>
+                  {% endif %}
+                  <div class="tda-info">
+                    <span class="tda-name">{{ item.clase.replace('___',' - ').replace('_',' ') if item.clase else 'Desconocido' }}</span>
+                    <span class="tda-sub">📍 Huancayo, Junín</span>
+                  </div>
+                </div>
+              </td>
+              <!-- Cultivo -->
+              <td>
+                <div class="td-cultivo">
+                  <span class="tdc-icon">{{ cd.icon }}</span>
+                  <div class="tdc-info">
+                    <span class="tdc-name">{{ cd.name }}</span>
+                    {% if cd.sci %}<span class="tdc-sci">{{ cd.sci }}</span>{% endif %}
+                  </div>
+                </div>
+              </td>
+              <!-- Diagnóstico -->
+              <td>
+                <div class="td-diag">
+                  <span class="tdd-badge {{ badge_class }}">{{ badge_text }}</span>
+                  {% if dsci %}<span class="tdd-sci">{{ dsci }}</span>{% endif %}
+                </div>
+              </td>
+              <!-- Estado -->
+              <td>
+                <div class="td-estado">
+                  <span class="tde-dot {{ estado_class }}"></span>
+                  <div class="tde-info">
+                    <span class="tde-text">{{ estado_text }}</span>
+                    <span class="tde-sub">{{ estado_sub }}</span>
+                  </div>
+                </div>
+              </td>
+              <!-- Confianza -->
+              <td>
+                <div class="td-conf">
+                  <span class="tdc-pct">{{ pct }}%</span>
+                  <div class="tdc-bar"><div class="tdc-fill" style="width:{{ pct }}%"></div></div>
+                </div>
+              </td>
+              <!-- Fecha -->
+              <td>
+                <span class="td-fecha">{{ fecha_str }}<span class="tdf-time">{{ hora_str }}</span></span>
+              </td>
+              <!-- Acción -->
+              <td>
+                <div class="td-action">
+                  <a href="{{ url_for('analisis.detalle', analisis_id=item.id) }}" class="btn-action">
+                    <i class="fas fa-eye me-1"></i> Ver detalle
+                  </a>
+                  <div style="position:relative;display:inline-block">
+                    <button class="btn-more" onclick="toggleMenu(this)" aria-label="Más opciones">⋮</button>
+                    <div class="more-menu">
+                      <a href="{{ url_for('analisis.detalle', analisis_id=item.id) }}"><i class="fas fa-eye"></i> Ver detalle</a>
+                      <a href="#" onclick="return confirm('¿Descargar reporte de este análisis?')"><i class="fas fa-download"></i> Descargar reporte</a>
+                      <a href="{{ url_for('analisis.analizar') }}"><i class="fas fa-redo"></i> Repetir análisis</a>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar">
+        <div class="pb-info" id="paginationInfo">Mostrando 1 a {{ [5, historial|length]|min }} de {{ historial|length }} resultados</div>
+        <div class="pb-pages" id="paginationControls"></div>
+        <div class="pb-per-page">
+          <span>Resultados por página</span>
+          <select id="perPageSelect" onchange="cambiarPerPage(this.value)">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="0">Todos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="empty-mod">
+        <i class="fas fa-seedling"></i>
+        <h5>Aún no tienes análisis</h5>
+        <p>Selecciona un cultivo y sube tu primera imagen para comenzar</p>
+        <a href="{{ url_for('analisis.analizar') }}" class="btn btn-primary"><i class="fas fa-microscope me-1"></i> Analizar ahora</a>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="dash-footer">
+    <span>&copy; 2026 <a href="#">CelesteAI</a> &mdash; Plataforma de diagnóstico agrícola inteligente</span>
+    <div class="df-right">
+      <a href="{{ url_for('analisis.metodologia') }}">Metodología</a>
+      <a href="#">Términos</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Soporte</a>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── Fix confidence bars ──
+document.querySelectorAll('.tdc-fill').forEach(function(el){
+  var w = parseFloat(el.style.width);
+  el.style.width = (isFinite(w) ? Math.max(0, Math.min(w, 100)) : 0) + '%';
+});
+
+// ── Crop filter options ──
+(function(){
+  var rows = document.querySelectorAll('.hist-row');
+  var cultivos = {};
+  rows.forEach(function(r){
+    var c = r.getAttribute('data-cultivo');
+    if (c) cultivos[c] = true;
+  });
+  var sel = document.getElementById('filterCultivo');
+  Object.keys(cultivos).sort().forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c; o.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+    sel.appendChild(o);
+  });
+})();
+
+// ── Pagination state ──
+var currentPage = 1;
+var perPage = 5;
+
+function aplicarFiltros() {
+  var q = document.getElementById('searchInput').value.toLowerCase();
+  var cultivo = document.getElementById('filterCultivo').value.toLowerCase();
+  var estado = document.getElementById('filterEstado').value;
+  var fecha = parseInt(document.getElementById('filterFecha').value) || 0;
+
+  var rows = document.querySelectorAll('.hist-row');
+  var visibleRows = [];
+  rows.forEach(function(r){
+    var diag = (r.getAttribute('data-diagnostico') || '').toLowerCase();
+    var rc = (r.getAttribute('data-cultivo') || '').toLowerCase();
+    var re = r.getAttribute('data-estado') || '';
+    var rf = parseInt(r.getAttribute('data-fecha')) || 0;
+    var show = true;
+
+    if (q && !diag.includes(q)) show = false;
+    if (cultivo && rc !== cultivo) show = false;
+    if (estado && re !== estado) show = false;
+
+    // Date filter
+    if (fecha > 0 && rf > 0) {
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2,'0');
+      var d = String(now.getDate()).padStart(2,'0');
+      var todayNum = parseInt(y + m + d);
+      var diff = todayNum - rf;
+      if (diff > fecha) show = false;
+    }
+
+    r.style.display = show ? '' : 'none';
+    if (show) visibleRows.push(r);
+  });
+
+  // Re-apply pagination on filtered results
+  currentPage = 1;
+  aplicarPaginacion();
+}
+
+function limpiarFiltros() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterCultivo').value = '';
+  document.getElementById('filterEstado').value = '';
+  document.getElementById('filterFecha').value = '';
+  aplicarFiltros();
+}
+
+function aplicarPaginacion() {
+  var rows = document.querySelectorAll('.hist-row');
+  var visible = [];
+  rows.forEach(function(r){
+    if (r.style.display !== 'none') visible.push(r);
+  });
+  var total = visible.length;
+  var pp = perPage === 0 ? total : perPage;
+  var pages = Math.max(1, Math.ceil(total / pp));
+  if (currentPage > pages) currentPage = pages;
+
+  // Show/hide rows
+  visible.forEach(function(r, i){
+    if (perPage === 0) {
+      r.style.display = '';
+    } else {
+      var pageIdx = Math.floor(i / pp);
+      r.style.display = pageIdx === (currentPage - 1) ? '' : 'none';
+      // But also respect filter - if filter hid it, keep hidden
+      var diag = (r.getAttribute('data-diagnostico') || '').toLowerCase();
+      var q = document.getElementById('searchInput').value.toLowerCase();
+      var cultivo = document.getElementById('filterCultivo').value.toLowerCase();
+      var estado = document.getElementById('filterEstado').value;
+      if (q || cultivo || estado) {
+        // filters already applied, this is just pagination re-hide
+      }
+    }
+  });
+
+  // Re-apply filters within page
+  var q = document.getElementById('searchInput').value.toLowerCase();
+  var cultivo = document.getElementById('filterCultivo').value.toLowerCase();
+  var estado = document.getElementById('filterEstado').value;
+  var fecha = parseInt(document.getElementById('filterFecha').value) || 0;
+
+  if (q || cultivo || estado || fecha) {
+    // Refilter
+    visible.forEach(function(r){
+      var diag = (r.getAttribute('data-diagnostico') || '').toLowerCase();
+      var rc = (r.getAttribute('data-cultivo') || '').toLowerCase();
+      var re = r.getAttribute('data-estado') || '';
+      var rf = parseInt(r.getAttribute('data-fecha')) || 0;
+      var show = true;
+      if (q && !diag.includes(q)) show = false;
+      if (cultivo && rc !== cultivo) show = false;
+      if (estado && re !== estado) show = false;
+      if (fecha > 0 && rf > 0) {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = String(now.getMonth() + 1).padStart(2,'0');
+        var d = String(now.getDate()).padStart(2,'0');
+        var todayNum = parseInt(y + m + d);
+        if ((todayNum - rf) > fecha) show = false;
+      }
+      if (!show) r.style.display = 'none';
+    });
+    // Recalculate visible after refilter
+    var refiltered = [];
+    rows.forEach(function(r){
+      if (r.style.display !== 'none') refiltered.push(r);
+    });
+    total = refiltered.length;
+    pp = perPage === 0 ? total : perPage;
+    pages = Math.max(1, Math.ceil(total / pp));
+    if (currentPage > pages) currentPage = pages;
+    // Re-hide for pagination
+    refiltered.forEach(function(r, i){
+      if (perPage !== 0) {
+        var pageIdx = Math.floor(i / pp);
+        r.style.display = pageIdx === (currentPage - 1) ? '' : 'none';
+      }
+    });
+    total = refiltered.length;
+    var shownOnPage = Math.min(pp, total - (currentPage - 1) * pp);
+    var start = (currentPage - 1) * pp + 1;
+    var end = Math.min(start + shownOnPage - 1, total);
+    document.getElementById('paginationInfo').textContent = 'Mostrando ' + start + ' a ' + end + ' de ' + total + ' resultados';
+  } else {
+    var shownOnPage = Math.min(pp, total - (currentPage - 1) * pp);
+    var start = (currentPage - 1) * pp + 1;
+    var end = Math.min(start + shownOnPage - 1, total);
+    document.getElementById('paginationInfo').textContent = 'Mostrando ' + start + ' a ' + end + ' de ' + total + ' resultados';
+  }
+
+  // Render pagination buttons
+  renderPaginationButtons(pages);
+}
+
+function renderPaginationButtons(pages) {
+  var container = document.getElementById('paginationControls');
+  var html = '';
+
+  html += '<button class="pb-nav" onclick="irPagina(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i> Anterior</button>';
+
+  var startP = Math.max(1, currentPage - 2);
+  var endP = Math.min(pages, startP + 4);
+  if (endP - startP < 4) startP = Math.max(1, endP - 4);
+
+  if (startP > 1) {
+    html += '<button onclick="irPagina(1)">1</button>';
+    if (startP > 2) html += '<button disabled>...</button>';
+  }
+
+  for (var i = startP; i <= endP; i++) {
+    html += '<button class="' + (i === currentPage ? 'active' : '') + '" onclick="irPagina(' + i + ')">' + i + '</button>';
+  }
+
+  if (endP < pages) {
+    if (endP < pages - 1) html += '<button disabled>...</button>';
+    html += '<button onclick="irPagina(' + pages + ')">' + pages + '</button>';
+  }
+
+  html += '<button class="pb-nav" onclick="irPagina(' + (currentPage + 1) + ')" ' + (currentPage >= pages ? 'disabled' : '') + '>Siguiente <i class="fas fa-chevron-right"></i></button>';
+
+  container.innerHTML = html;
+}
+
+function irPagina(n) {
+  var rows = document.querySelectorAll('.hist-row');
+  var visible = [];
+  rows.forEach(function(r){
+    if (r.style.display !== 'none') visible.push(r);
+  });
+  var total = visible.length;
+  var pp = perPage === 0 ? total : perPage;
+  var pages = Math.max(1, Math.ceil(total / pp));
+  if (n < 1 || n > pages) return;
+  currentPage = n;
+  aplicarPaginacion();
+}
+
+function cambiarPerPage(val) {
+  perPage = parseInt(val) || 0;
+  currentPage = 1;
+  aplicarPaginacion();
+}
+
+// ── Action menu toggle ──
+function toggleMenu(btn) {
+  var menu = btn.nextElementSibling;
+  var isOpen = menu.classList.contains('open');
+
+  // Close all menus
+  document.querySelectorAll('.more-menu').forEach(function(m){ m.classList.remove('open'); });
+
+  if (!isOpen) menu.classList.add('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.btn-more') && !e.target.closest('.more-menu')) {
+    document.querySelectorAll('.more-menu').forEach(function(m){ m.classList.remove('open'); });
+  }
+});
+
+// ── Export function ──
+function exportarHistorial() {
+  var rows = document.querySelectorAll('.hist-row');
+  var csv = 'Diagnóstico,Estado,Confianza,Fecha\n';
+  rows.forEach(function(r){
+    var cells = r.querySelectorAll('td');
+    if (cells.length >= 6) {
+      var diag = cells[0].textContent.trim().replace(/,/g,';');
+      var estado = cells[3].textContent.trim().replace(/,/g,';');
+      var conf = cells[4].textContent.trim().replace(/,/g,';');
+      var fecha = cells[5].textContent.trim().replace(/,/g,';');
+      csv += '"' + diag + '","' + estado + '","' + conf + '","' + fecha + '"\n';
+    }
+  });
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'historial_celesteai_' + new Date().toISOString().slice(0,10) + '.csv';
+  link.click();
+}
+
+// ── Init pagination ──
+aplicarPaginacion();
+</script>
+</body>
+</html>

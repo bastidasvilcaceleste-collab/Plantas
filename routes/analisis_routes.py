@@ -60,21 +60,27 @@ DISEASE_SCI = {
 # ── PREDICCIÓN ─────────────────────────────────────────────
 
 CULTIVO_PREFIX = {
-    'papa': 'Potato___',
-    'tomate': 'Tomato___',
-    'maiz': 'Corn_(maize)___',
-    'cafe': None,
-    'palta': None,
+    'papa': ['Potato_'],
+    'tomate': ['Tomato_'],
+    'maiz': ['Corn_'],
+    'manzano': ['Apple_'],
+    'cerezo': ['Cherry_'],
+    'vid': ['Grape_'],
+    'naranjo': ['Orange_'],
+    'durazno': ['Peach_'],
+    'pimiento': ['Pepper_Bell_', 'Bellpepper_'],
+    'fresa': ['Strawberry_'],
+    'soya': ['Soybean_'],
 }
 
 
 def _filtrar_por_cultivo(resultado, cultivo):
-    prefix = CULTIVO_PREFIX.get(cultivo)
-    if not prefix:
+    prefixes = CULTIVO_PREFIX.get(cultivo)
+    if not prefixes:
         return resultado
 
     def match_clase(item):
-        return item['clase'].startswith(prefix)
+        return any(item['clase'].startswith(p) for p in prefixes)
 
     principal = resultado['principal']
     alternativas = resultado['alternativas']
@@ -331,7 +337,7 @@ def reportes():
 
     crop_counts = {}
     for item in historial:
-        crop = item.clase.split('___')[0] if item.clase and '___' in item.clase else 'Otros'
+        crop = item.clase.split('_')[0] if item.clase else 'Otros'
         crop_counts[crop] = crop_counts.get(crop, 0) + 1
 
     sorted_crops = sorted(crop_counts.items(), key=lambda x: -x[1])

@@ -924,6 +924,10 @@ body {
 .cnf-track { flex: 1; height: 5px; background: var(--border); border-radius: 4px; max-width: 80px; overflow: hidden; }
 .cnf-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #81c784); border-radius: 4px; transition: width .6s ease; }
 
+.cnf-fill-lg.high { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.cnf-fill-lg.med { background: linear-gradient(90deg, #fbbf24, #d97706); }
+.cnf-fill-lg.low { background: linear-gradient(90deg, #fca5a5, #dc2626); }
+
 /* ── EMPTY STATE ────────────────────────── */
 
 .empty-state { text-align: center; padding: 48px 20px; }

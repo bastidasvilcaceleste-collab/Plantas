@@ -411,8 +411,17 @@ def filtrar(cultivo=None, patogeno=None, busqueda=None):
     return unicos
 
 
+def _normalizar(s):
+    return s.lower().replace('_', '').replace('-', '').replace(' ', '').replace('(', '').replace(')', '').replace(',', '')
+
 def buscar_por_clave(clave):
+    if not clave:
+        return None
+    normalized = _normalizar(clave)
     for e in ENFERMEDADES:
-        if e['clave'] == clave:
+        if _normalizar(e['clave']) == normalized:
+            return e
+    for e in ENFERMEDADES:
+        if _normalizar(e['clave']).endswith(normalized) or normalized.endswith(_normalizar(e['clave'])):
             return e
     return None

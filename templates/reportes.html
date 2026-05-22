@@ -124,7 +124,7 @@
           <tbody>
           {% for item in historial[:10] %}
             <tr>
-              <td><strong>{{ item.clase.replace('___',' - ').replace('_',' ')[:40] if item.clase else 'Desconocido' }}</strong></td>
+              <td><strong>{{ item.clase.replace('_',' ')[:40] if item.clase else 'Desconocido' }}</strong></td>
               <td>{% if item.es_sana %}<span class="badge badge-green">Saludable</span>{% else %}<span class="badge badge-red">Enfermedad</span>{% endif %}</td>
               <td>{{ (item.confianza * 100)|round(1) }}%</td>
               <td style="color:var(--muted);font-size:0.82rem">{{ item.fecha.strftime('%d/%m/%Y %H:%M') if item.fecha else '—' }}</td>

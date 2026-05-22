@@ -137,7 +137,7 @@ def exportar_datos(formato):
         for a in analisis:
             fecha = a.fecha.replace(tzinfo=timezone.utc) if a.fecha and a.fecha.tzinfo is None else a.fecha
             writer.writerow([
-                a.id, a.clase.split('___')[0] if '___' in a.clase else a.clase,
+                a.id, a.clase.split('_')[0],
                 a.clase, f'{a.confianza*100:.1f}%',
                 'Sana' if a.es_sana else 'Enferma',
                 fecha.strftime('%d/%m/%Y') if fecha else '',

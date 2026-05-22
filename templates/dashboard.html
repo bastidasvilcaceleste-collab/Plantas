@@ -165,7 +165,7 @@
         <div class="wc-body">
           {% set cultivos_dict = {} %}
           {% for item in historial %}
-            {% set c = item.clase.split('___')[0] if item.clase and '___' in item.clase else 'Otros' %}
+            {% set c = item.clase.split('_')[0] if item.clase else 'Otros' %}
             {% if c in cultivos_dict %}
               {% set _ = cultivos_dict.update({c: cultivos_dict[c] + 1}) %}
             {% else %}
@@ -202,7 +202,7 @@
               <span class="ai-indicator red"></span>
             {% endif %}
             <div class="ai-info">
-              <div class="ai-name">{{ item.clase.replace('___',' - ').replace('_',' ') if item.clase else 'Desconocido' }}</div>
+              <div class="ai-name">{{ item.clase.replace('_',' ') if item.clase else 'Desconocido' }}</div>
               <div class="ai-sub">{% if item.es_sana %}Saludable{% else %}Enfermedad{% endif %}</div>
             </div>
             <div class="ai-date">{{ item.fecha.strftime('%d/%m') if item.fecha else '' }}</div>
@@ -240,7 +240,7 @@
           <tbody>
           {% for item in historial[:5] %}
             <tr>
-              <td><strong>{{ item.clase.replace('___',' - ').replace('_',' ') if item.clase else 'Desconocido' }}</strong></td>
+              <td><strong>{{ item.clase.replace('_',' ') if item.clase else 'Desconocido' }}</strong></td>
               <td>
                 {% if item.clase in ('Resultado_poco_confiable','No_reconocida') %}
                   <span class="badge badge-yellow">⚠ Poco confiable</span>

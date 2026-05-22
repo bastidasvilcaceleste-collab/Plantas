@@ -241,7 +241,7 @@
           </thead>
           <tbody>
           {% for item in historial %}
-            {% set parts = item.clase.split('___') if item.clase and '___' in item.clase else ['', ''] %}
+            {% set parts = item.clase.split('_', 1) if item.clase else ['', ''] %}
             {% set crop_raw = parts[0] %}
             {% set disease_raw = parts[1] if parts|length > 1 else '' %}
 
@@ -297,7 +297,7 @@
                   <div class="tda-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--primary-xl);color:var(--primary)">{{ cd.icon }}</div>
                   {% endif %}
                   <div class="tda-info">
-                    <span class="tda-name">{{ item.clase.replace('___',' - ').replace('_',' ') if item.clase else 'Desconocido' }}</span>
+                    <span class="tda-name">{{ item.clase.replace('_',' ') if item.clase else 'Desconocido' }}</span>
                     <span class="tda-sub">📍 Huancayo, Junín</span>
                   </div>
                 </div>

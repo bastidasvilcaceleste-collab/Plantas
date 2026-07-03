@@ -1,0 +1,26 @@
+<header class="topbar" id="topbar">
+  <div class="topbar-left">
+    <div class="topbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Buscar cultivos, enfermedades, fertilizantes..." id="globalSearch" onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v)window.location.href='{{ url_for('analisis.biblioteca') }}?busqueda='+encodeURIComponent(v)}">
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tb-item"><i class="fas fa-map-marker-alt" style="color:var(--primary)"></i> Huancayo, Junín</div>
+    <div class="tb-item tb-weather"><i class="fas fa-cloud-sun" style="color:var(--accent)"></i> 18°C <span style="color:var(--muted);font-size:0.78rem">Nublado</span></div>
+    <div class="tb-user" onclick="document.getElementById('tbDropdown').classList.toggle('open')">
+      <div class="tb-avatar">{{ current_user.nombre[:1].upper() if current_user.nombre else 'U' }}</div>
+      <span class="tb-greeting">Hola, {{ current_user.nombre if current_user.nombre else 'Usuario' }} <i class="fas fa-chevron-down" style="font-size:0.6rem;color:var(--muted);margin-left:2px"></i></span>
+      <div class="tb-dropdown" id="tbDropdown">
+        <div class="tbd-header">{{ current_user.nombre if current_user.nombre else 'Usuario' }}</div>
+        <div class="tbd-email">{{ current_user.email if current_user.email else '' }}</div>
+        <div class="tbd-divider"></div>
+        <a href="{{ url_for('analisis.dashboard') }}" class="tbd-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="{{ url_for('analisis.historial') }}" class="tbd-item"><i class="fas fa-history"></i> Historial</a>
+        <a href="{{ url_for('settings.configuracion') }}" class="tbd-item"><i class="fas fa-cog"></i> Configuración</a>
+        <div class="tbd-divider"></div>
+        <a href="{{ url_for('auth.logout') }}" class="tbd-item tbd-logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Analizar Plantas</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+.step-section{display:none}
+.step-section.active{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Crop grid ── */
+.crop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.crop-card{background:var(--white);border-radius:var(--radius);border:2px solid var(--border);padding:22px 14px 18px;text-align:center;cursor:pointer;transition:all .25s}
+.crop-card:hover{border-color:var(--primary-l);transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.crop-card.selected{border-color:var(--primary);background:var(--primary-xl);box-shadow:0 0 0 3px rgba(27,122,61,0.15)}
+.crop-card .ci{font-size:2.6rem;line-height:1;margin-bottom:5px}
+.crop-card .cn{font-weight:700;font-size:0.9rem;margin-bottom:2px}
+.crop-card .cs{font-size:0.72rem;color:var(--muted)}
+
+/* ── Steps wizard with descriptions ── */
+.steps-wrap{display:flex;align-items:stretch;gap:0;margin-bottom:28px;position:relative}
+.sw-step{flex:1;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--white);border:1.5px solid var(--border);border-right:none;position:relative;transition:all .25s}
+.sw-step:first-child{border-radius:var(--radius) 0 0 var(--radius)}
+.sw-step:last-child{border-right:1.5px solid var(--border);border-radius:0 var(--radius) var(--radius) 0}
+.sw-step.active{background:var(--primary-xl);border-color:var(--primary);z-index:1}
+.sw-step.active+.sw-step{border-left-color:var(--primary)}
+.sw-step.done{background:#e8f5e9;border-color:var(--primary-d)}
+.sw-step.done+.sw-step{border-left-color:var(--primary-d)}
+.sw-step .sw-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;flex-shrink:0;background:var(--border);color:var(--muted-l);transition:all .25s}
+.sw-step.active .sw-num{background:var(--primary);color:var(--white)}
+.sw-step.done .sw-num{background:var(--primary-d);color:var(--white)}
+.sw-step .sw-info{flex:1;min-width:0}
+.sw-step .sw-info .sw-title{font-weight:700;font-size:0.85rem;color:var(--muted-l);transition:color .25s}
+.sw-step.active .sw-info .sw-title{color:var(--primary-d)}
+.sw-step.done .sw-info .sw-title{color:var(--primary-d)}
+.sw-step .sw-info .sw-desc{font-size:0.72rem;color:var(--muted-l);margin-top:1px}
+.sw-step.active .sw-info .sw-desc{color:var(--muted)}
+.sw-step .sw-check{display:none;color:var(--primary-d);font-size:0.85rem;margin-left:auto}
+.sw-step.done .sw-check{display:block}
+
+/* ── Result 2-column layout ── */
+.result-2col{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:28px}
+
+/* ── Diagnosis panel ── */
+.diag-card{border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid #fecaca;background:#fffafb;box-shadow:var(--shadow)}
+.diag-card.diseased{border-color:#fecaca;background:#fffafb}
+.diag-card.healthy{border-color:#c8e0ce;background:var(--primary-xl)}
+.diag-card.low-confidence{border-color:#ffe0b2;background:var(--accent-l)}
+.diag-hdr{padding:18px 22px 14px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:12px}
+.diag-hdr .dh-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.diag-hdr.diseased .dh-icon{background:#fee2e2}
+.diag-hdr.healthy .dh-icon{background:var(--primary-l)}
+.diag-hdr.low-confidence .dh-icon{background:var(--accent-l)}
+.diag-hdr .dh-info{flex:1}
+.diag-hdr .dh-info .dh-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted)}
+.diag-hdr .dh-info .dh-name{font-weight:800;font-size:1rem;margin-top:1px}
+.diag-hdr .dh-info .dh-sci{font-size:0.78rem;color:var(--muted);font-style:italic}
+.diag-body{padding:18px 22px 22px}
+
+/* ── Confidence bar ── */
+.cnf-section{margin-bottom:16px}
+.cnf-section .cnf-label{display:flex;justify-content:space-between;font-size:0.82rem;font-weight:600;margin-bottom:5px}
+.cnf-section .cnf-label .cnf-pct{color:var(--primary);font-weight:800}
+.cnf-bar-lg{height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.cnf-bar-lg .cnf-fill-lg{height:100%;border-radius:5px;background:linear-gradient(90deg,#4caf50,#1b7a3d);transition:width .8s ease}
+
+/* ── Symptoms list ── */
+.symptom-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.symptom-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border-radius:8px;font-size:0.82rem;color:var(--dark);border:1px solid var(--border-l)}
+.symptom-item .si-check{color:var(--primary);font-size:0.75rem;width:18px;height:18px;border-radius:50%;background:var(--primary-xl);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── Description text ── */
+.diag-desc{font-size:0.85rem;color:var(--muted);line-height:1.7;padding:14px 16px;background:var(--white);border-radius:8px;border:1px solid var(--border-l);margin-bottom:14px}
+
+/* ── Recommendations card ── */
+.rec-card-lg{border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--white);box-shadow:var(--shadow);overflow:hidden}
+.rec-hdr{padding:18px 22px 12px;border-bottom:1px solid var(--border-l);display:flex;align-items:center;gap:8px}
+.rec-hdr h5{font-size:0.9rem;font-weight:700}
+.rec-hdr i{color:var(--primary)}
+.rec-body{padding:18px 22px 22px}
+
+.treat-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.treat-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border-l)}
+.treat-item .ti-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;background:var(--primary-l)}
+.treat-item .ti-text{flex:1}
+.treat-item .ti-text strong{display:block;font-size:0.82rem;font-weight:600;margin-bottom:1px}
+.treat-item .ti-text span{font-size:0.78rem;color:var(--muted);line-height:1.5}
+
+.prev-list{display:flex;flex-direction:column;gap:6px}
+.prev-item{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--dark)}
+.prev-item .pi-check{color:var(--primary);font-size:0.75rem;width:20px;height:20px;border-radius:50%;background:var(--primary-xl);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── Products grid ── */
+.prod-grid{display:flex;flex-direction:column;gap:10px}
+.prod-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border-l)}
+.prod-item .pi-img{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--primary-xl);flex-shrink:0}
+.prod-item .pi-info{flex:1;min-width:0}
+.prod-item .pi-info .pi-name{font-weight:600;font-size:0.82rem}
+.prod-item .pi-info .pi-qty{font-size:0.72rem;color:var(--muted)}
+.prod-item .pi-tag{font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:50px;text-transform:uppercase}
+.pi-tag.fung{background:#fee2e2;color:var(--danger)}
+.pi-tag.bio{background:var(--primary-l);color:var(--primary)}
+.pi-tag.org{background:#fef3c7;color:#92400e}
+
+/* ── Conditions grid ── */
+.cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cond-item{background:var(--bg);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border-l)}
+.cond-item .ci-icon{font-size:1.2rem;margin-bottom:3px}
+/* ── Confidence bar colors ── */
+.cnf-fill-lg.high{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.cnf-fill-lg.med{background:linear-gradient(90deg,#fbbf24,#d97706)}
+.cnf-fill-lg.low{background:linear-gradient(90deg,#fca5a5,#dc2626)}
+.cond-item .ci-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.3px;color:var(--muted);font-weight:600}
+.cond-item .ci-value{font-weight:700;font-size:0.85rem;margin-top:1px}
+
+/* ── History mini ── */
+.hist-mini{display:flex;flex-direction:column;gap:8px}
+.hm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border-l);font-size:0.78rem}
+.hm-item .hm-date{color:var(--muted);min-width:55px;font-size:0.72rem}
+.hm-item .hm-result{flex:1;min-width:0;font-weight:600}
+.hm-item .hm-result .hm-clase{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-empty{text-align:center;padding:18px 0;color:var(--muted);font-size:0.82rem}
+
+/* ── Product widget bottom ── */
+.productos-full .prod-grid{gap:8px}
+.productos-full .prod-item{padding:8px 10px}
+
+/* ── Responsive ── */
+@media(max-width:992px){
+  .steps-wrap{flex-direction:column;border-radius:var(--radius);overflow:hidden}
+  .sw-step{border-right:1.5px solid var(--border)!important;border-bottom:none}
+  .sw-step:last-child{border-bottom:1.5px solid var(--border)}
+  .sw-step:first-child{border-radius:var(--radius) var(--radius) 0 0}
+  .sw-step:last-child{border-radius:0 0 var(--radius) var(--radius)}
+  .result-2col{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .cond-grid{grid-template-columns:1fr}
+}
+.analisis-toast{display:none;padding:12px 18px;border-radius:var(--radius);margin-bottom:20px;font-size:0.82rem;font-weight:500;align-items:center;gap:10px;background:var(--primary-xl);border:1px solid #c8e0ce;color:var(--primary-d)}
+.analisis-toast.show{display:flex}
+</style>
+</head>
+<body>
+
+<!-- Global error interceptor -->
+<script>
+window.addEventListener('error', function(e) {
+  if (e.message && (e.message.toLowerCase().includes('model does not support') || e.message.toLowerCase().includes('cannot read') || e.message.toLowerCase().includes('image.png'))) {
+    console.warn('[CelesteAI] External error suppressed (likely browser extension):', e.message);
+    e.preventDefault();
+    return true;
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  if (e.reason && typeof e.reason === 'object' && e.reason.message && e.reason.message.toLowerCase().includes('model does not support')) {
+    console.warn('[CelesteAI] External promise rejection suppressed:', e.reason.message);
+    e.preventDefault();
+    return true;
+  }
+});
+</script>
+
+{% include '_sidebar.html' %}
+
+<main class="main">
+  {% include '_topbar.html' %}
+  <div class="main-inner">
+
+    <!-- Header -->
+    <div class="page-hdr" style="margin-bottom:22px">
+      <div>
+        <h1>Analizar plantas</h1>
+        <p>Sube una imagen de tu cultivo y obtén un diagnóstico con inteligencia artificial</p>
+      </div>
+      <a href="{{ url_for('analisis.dashboard') }}" class="btn btn-outline">
+        <i class="fas fa-arrow-left me-1"></i> Volver al Dashboard
+      </a>
+    </div>
+
+    <!-- Toast -->
+    <div class="analisis-toast" id="analisisToast">
+      <i class="fas fa-check-circle"></i><span></span>
+    </div>
+
+    <!-- Steps Wizard -->
+    <div class="steps-wrap" id="stepsIndicator">
+      <div class="sw-step active" id="step1Label">
+        <span class="sw-num">1</span>
+        <div class="sw-info">
+          <div class="sw-title">Seleccionar cultivo</div>
+          <div class="sw-desc">Elegir cultivo a analizar</div>
+        </div>
+        <span class="sw-check"><i class="fas fa-check"></i></span>
+      </div>
+      <div class="sw-step" id="step2Label">
+        <span class="sw-num">2</span>
+        <div class="sw-info">
+          <div class="sw-title">Subir imagen</div>
+          <div class="sw-desc">Toma o sube una foto clara</div>
+        </div>
+        <span class="sw-check"><i class="fas fa-check"></i></span>
+      </div>
+      <div class="sw-step" id="step3Label">
+        <span class="sw-num">3</span>
+        <div class="sw-info">
+          <div class="sw-title">Diagnóstico</div>
+          <div class="sw-desc">Obtén resultados y recomendaciones</div>
+        </div>
+        <span class="sw-check"><i class="fas fa-check"></i></span>
+      </div>
+    </div>
+
+    <!-- Step 1: Select crop -->
+    <div class="step-section active" id="step1">
+      <div class="card">
+        <div class="card-hdr">
+          <h5><i class="fas fa-seedling" style="color:var(--primary)"></i> Selecciona tu cultivo</h5>
+          <span style="font-size:0.78rem;color:var(--muted)">Disponibles: <strong style="color:var(--primary)" id="cropCount">3</strong> cultivos</span>
+        </div>
+        <div class="crop-grid" id="cropGrid">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="font-size:0.82rem;color:var(--muted)" id="cropHelpText">Selecciona un cultivo para continuar</div>
+          <button class="btn btn-primary" id="btnContinue" disabled onclick="goToStep2()">
+            <i class="fas fa-arrow-right me-1"></i> Continuar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Upload image -->
+    <div class="step-section" id="step2">
+      <div class="card">
+        <div class="card-hdr">
+          <h5><i class="fas fa-camera" style="color:var(--primary)"></i> Sube tu imagen</h5>
+          <button class="btn btn-outline btn-sm" onclick="goToStep1()"><i class="fas fa-arrow-left me-1"></i> Cambiar cultivo</button>
+        </div>
+
+        <!-- Selected crop badge -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 16px;background:var(--primary-xl);border-radius:8px;border:1px solid #c8e0ce">
+          <span style="font-size:1.4rem" id="selectedCropIcon">🥔</span>
+          <div>
+            <div style="font-weight:700;font-size:0.9rem" id="selectedCropName">Papa</div>
+            <div style="font-size:0.72rem;color:var(--muted)" id="selectedCropSciLabel">Solanum tuberosum</div>
+          </div>
+        </div>
+
+        <div id="alertUpload" class="alert alert-error"></div>
+
+        <!-- Upload zone -->
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()" id="uploadZone">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h6>Arrastra la foto de la hoja aquí</h6>
+          <small>JPG, PNG, WEBP &bull; Máx 10MB &bull; Buena iluminación</small>
+          <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewImage(this)">
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-wrap" id="previewWrap">
+          <div style="position:relative;display:inline-block;max-width:100%">
+            <img id="previewImg" src="" alt="Vista previa" style="max-height:300px">
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+              <i class="fas fa-exchange-alt me-1"></i> Cambiar imagen
+            </button>
+            <button class="btn btn-accent" id="btnAnalyze" onclick="analyze()">
+              <i class="fas fa-microscope me-2"></i> Analizar cultivo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loadingIndicator">
+      <div class="spinner"></div>
+      <p id="loadingText">Procesando imagen...</p>
+      <div class="bar-progress"><div class="fill"></div></div>
+    </div>
+
+    <!-- Step 3: Results Dashboard -->
+    <div class="step-section" id="step3">
+
+      <!-- 3-column panel: Crop / Image / Info -->
+      <div class="panel-3col" style="margin-bottom:22px">
+
+        <!-- Crop selected -->
+        <div class="panel-card">
+          <div class="pc-hdr"><i class="fas fa-seedling"></i><h5>Cultivo seleccionado</h5></div>
+          <div class="pc-body">
+            <div style="text-align:center;padding:6px 0 12px">
+              <div style="font-size:3rem;line-height:1;margin-bottom:6px" id="resultCropIcon">🍅</div>
+              <div style="font-weight:800;font-size:1.05rem" id="resultCropName">Tomate</div>
+              <div style="font-size:0.78rem;color:var(--muted);font-style:italic;margin-top:2px" id="resultCropSciName">Solanum lycopersicum</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="goToStep1()" style="width:100%;justify-content:center">
+              <i class="fas fa-arrow-left me-1"></i> Cambiar cultivo
+            </button>
+          </div>
+        </div>
+
+        <!-- Image -->
+        <div class="panel-card">
+          <div class="pc-hdr"><i class="fas fa-camera"></i><h5>Imagen de la planta</h5></div>
+          <div class="pc-body" style="text-align:center">
+            <img id="resultPreviewImg" src="" alt="Vista previa" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:var(--bg);margin-bottom:10px">
+            <button class="btn btn-outline btn-sm" onclick="goToStep2()" style="width:100%;justify-content:center">
+              <i class="fas fa-exchange-alt me-1"></i> Cambiar imagen
+            </button>
+          </div>
+        </div>
+
+        <!-- Image info -->
+        <div class="panel-card">
+          <div class="pc-hdr"><i class="fas fa-info-circle"></i><h5>Información de la foto</h5></div>
+          <div class="pc-body" id="imageInfoContent">
+            <div class="tip-item"><i class="fas fa-calendar"></i> <span id="infoDate">—</span></div>
+            <div class="tip-item"><i class="fas fa-expand"></i> <span id="infoResolution">—</span></div>
+            <div class="tip-item"><i class="fas fa-file"></i> <span id="infoFormat">—</span></div>
+            <div class="tip-item"><i class="fas fa-map-marker-alt"></i> <span id="infoLocation">Huancayo, Junín, Perú</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2-column: Diagnosis + Recommendations -->
+      <div class="result-2col" id="resultMiddleRow">
+
+        <!-- Diagnosis IA -->
+        <div class="diag-card diseased" id="diagnosisPanel">
+          <div class="diag-hdr diseased" id="diagHeader">
+            <div class="dh-icon" id="diagIcon">🍅</div>
+            <div class="dh-info">
+              <div class="dh-title">Diagnóstico de la IA</div>
+              <div class="dh-name" id="diagName">Tizón temprano del tomate</div>
+              <div class="dh-sci" id="diagSciName">Alternaria solani</div>
+            </div>
+            <span class="badge" id="diagBadge">Enfermedad</span>
+          </div>
+          <div class="diag-body">
+            <div class="cnf-section">
+              <div class="cnf-label"><span>Confianza del modelo</span><span class="cnf-pct" id="diagConfianza">87%</span></div>
+              <div class="cnf-bar-lg"><div class="cnf-fill-lg" id="diagBar" style="width:87%"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-top:3px">
+                <span id="diagNivel" style="font-weight:600">Alta confianza</span>
+                <span style="color:var(--muted)">≥85% alta · ≥65% media · &lt;65% baja</span>
+              </div>
+            </div>
+            <div class="diag-desc" id="diagDesc">
+              El tizón temprano es una enfermedad fúngica que causa manchas oscuras con anillos concéntricos en las hojas, tallos y frutos del tomate.
+            </div>
+            <div id="symptomsContainer">
+              <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                <i class="fas fa-thermometer-half" style="color:var(--primary)"></i> Síntomas observados
+              </div>
+              <div class="symptom-list" id="symptomList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="rec-card-lg" id="recommendationsPanel">
+          <div class="rec-hdr"><i class="fas fa-prescription-bottle"></i><h5>Recomendaciones</h5></div>
+          <div class="rec-body">
+            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+              <i class="fas fa-pills" style="color:var(--primary)"></i> Tratamientos
+            </div>
+            <div class="treat-grid" id="treatGrid"></div>
+
+            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px;margin-top:16px">
+              <i class="fas fa-shield-alt" style="color:var(--primary)"></i> Prevención
+            </div>
+            <div class="prev-list" id="prevList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 widgets bottom -->
+      <div class="widgets-4col" id="bottomWidgets" style="grid-template-columns:1.2fr 1fr 1fr">
+
+        <!-- Productos recomendados -->
+        <div class="widget-card productos-full">
+          <div class="wc-hdr"><i class="fas fa-shopping-bag"></i><h6>Productos recomendados</h6></div>
+          <div class="wc-body">
+            <div class="prod-grid" id="productsGrid">
+              <div class="prod-item">
+                <div class="pi-img">🧪</div>
+                <div class="pi-info">
+                  <div class="pi-name">Fungicida Cúprico</div>
+                  <div class="pi-qty">500 ml · Aplicación foliar</div>
+                </div>
+                <span class="pi-tag fung">Fung</span>
+              </div>
+              <div class="prod-item">
+                <div class="pi-img">🌿</div>
+                <div class="pi-info">
+                  <div class="pi-name">Bioestimulante Orgánico</div>
+                  <div class="pi-qty">1 L · Refuerzo natural</div>
+                </div>
+                <span class="pi-tag bio">Bio</span>
+              </div>
+              <div class="prod-item">
+                <div class="pi-img">🌱</div>
+                <div class="pi-info">
+                  <div class="pi-name">Fungicida Orgánico NP</div>
+                  <div class="pi-qty">250 ml · Control preventivo</div>
+                </div>
+                <span class="pi-tag org">Org</span>
+              </div>
+            </div>
+            <a href="{{ url_for('analisis.fertilizantes') }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:10px">
+              <i class="fas fa-arrow-right me-1"></i> Ver más productos
+            </a>
+          </div>
+        </div>
+
+        <!-- Condiciones ideales -->
+        <div class="widget-card">
+          <div class="wc-hdr"><i class="fas fa-sun"></i><h6>Condiciones ideales</h6></div>
+          <div class="wc-body">
+            <div class="cond-grid" id="conditionsGrid">
+              <div class="cond-item"><div class="ci-icon">🌡️</div><div class="ci-label">Temperatura</div><div class="ci-value" id="condTemp">20-28 °C</div></div>
+              <div class="cond-item"><div class="ci-icon">💧</div><div class="ci-label">Humedad</div><div class="ci-value" id="condHum">60-80%</div></div>
+              <div class="cond-item"><div class="ci-icon">🌱</div><div class="ci-label">Suelo</div><div class="ci-value" id="condSuelo">Franco</div></div>
+              <div class="cond-item"><div class="ci-icon">🧪</div><div class="ci-label">pH ideal</div><div class="ci-value" id="condPh">5.5-7.0</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial relacionado -->
+        <div class="widget-card">
+          <div class="wc-hdr"><i class="fas fa-clock"></i><h6>Historial relacionado</h6></div>
+          <div class="wc-body">
+            <div class="hist-mini" id="historyContent">
+              {% if historial %}
+                {% for item in historial[:4] %}
+                <div class="hm-item">
+                  <span class="hm-date">{{ item.fecha.strftime('%d/%m') if item.fecha else '—' }}</span>
+                  <span class="hm-result">
+                    <span class="hm-clase">{{ item.clase.replace('_',' ')[:28] if item.clase else 'Desconocido' }}</span>
+                    {% if item.clase in ('Resultado_poco_confiable','No_reconocida') %}
+                      <span class="badge badge-yellow" style="font-size:0.6rem">⚠</span>
+                    {% elif item.es_sana %}
+                      <span class="badge badge-green" style="font-size:0.6rem">✓</span>
+                    {% else %}
+                      <span class="badge badge-red" style="font-size:0.6rem">⚠</span>
+                    {% endif %}
+                  </span>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="hist-empty">
+                  <i class="fas fa-seedling" style="font-size:1.3rem;color:#d0dfd4;margin-bottom:6px;display:block"></i>
+                  Sin análisis previos
+                </div>
+              {% endif %}
+            </div>
+            {% if historial %}
+            <a href="{{ url_for('analisis.historial') }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:8px">
+              <i class="fas fa-arrow-right me-1"></i> Ver historial completo
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <a href="{{ url_for('analisis.dashboard') }}" class="btn btn-outline"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
+        <button class="btn btn-primary" onclick="location.reload()"><i class="fas fa-redo me-1"></i> Nuevo análisis</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="dash-footer">
+    <span>&copy; 2026 <a href="#">CelesteAI</a> &mdash; Plataforma de diagnóstico agrícola inteligente</span>
+    <div class="df-right">
+      <a href="{{ url_for('analisis.metodologia') }}">Metodología</a>
+      <a href="#">Términos</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Soporte</a>
+    </div>
+  </div>
+</main>
+
+<script>
+const CROP_MAP = {
+  papa: { icon: '🥔', name: 'Papa', sciName: 'Solanum tuberosum', supported: true,
+    conditions: { temp: '15-22 °C', hum: '70-85%', suelo: 'Franco arenoso', ph: '5.5-6.5' } },
+  tomate: { icon: '🍅', name: 'Tomate', sciName: 'Solanum lycopersicum', supported: true,
+    conditions: { temp: '20-28 °C', hum: '60-80%', suelo: 'Franco', ph: '5.5-7.0' } },
+  maiz: { icon: '🌽', name: 'Maíz', sciName: 'Zea mays', supported: true,
+    conditions: { temp: '18-30 °C', hum: '65-85%', suelo: 'Franco arcilloso', ph: '5.8-7.0' } },
+  manzano: { icon: '🍎', name: 'Manzano', sciName: 'Malus domestica', supported: true,
+    conditions: { temp: '15-25 °C', hum: '60-75%', suelo: 'Franco', ph: '6.0-7.0' } },
+  arandano: { icon: '🫐', name: 'Arándano', sciName: 'Vaccinium corymbosum', supported: true,
+    conditions: { temp: '10-25 °C', hum: '60-80%', suelo: 'Ácido', ph: '4.5-5.5' } },
+  cerezo: { icon: '🍒', name: 'Cerezo', sciName: 'Prunus avium', supported: true,
+    conditions: { temp: '15-25 °C', hum: '60-75%', suelo: 'Franco', ph: '6.0-7.0' } },
+  vid: { icon: '🍇', name: 'Vid', sciName: 'Vitis vinifera', supported: true,
+    conditions: { temp: '18-28 °C', hum: '55-70%', suelo: 'Franco arenoso', ph: '5.5-6.5' } },
+  naranjo: { icon: '🍊', name: 'Naranjo', sciName: 'Citrus sinensis', supported: true,
+    conditions: { temp: '20-30 °C', hum: '60-80%', suelo: 'Franco', ph: '5.5-6.5' } },
+  durazno: { icon: '🍑', name: 'Durazno', sciName: 'Prunus persica', supported: true,
+    conditions: { temp: '15-25 °C', hum: '60-75%', suelo: 'Franco', ph: '5.5-6.5' } },
+  pimiento: { icon: '🌶️', name: 'Pimiento', sciName: 'Capsicum annuum', supported: true,
+    conditions: { temp: '20-28 °C', hum: '60-80%', suelo: 'Franco', ph: '5.5-7.0' } },
+  fresa: { icon: '🍓', name: 'Fresa', sciName: 'Fragaria × ananassa', supported: true,
+    conditions: { temp: '15-25 °C', hum: '70-85%', suelo: 'Franco arenoso', ph: '5.5-6.5' } },
+  frambuesa: { icon: '🍇', name: 'Frambuesa', sciName: 'Rubus idaeus', supported: true,
+    conditions: { temp: '15-22 °C', hum: '70-85%', suelo: 'Franco', ph: '5.5-6.5' } },
+  soya: { icon: '🫘', name: 'Soya', sciName: 'Glycine max', supported: true,
+    conditions: { temp: '20-30 °C', hum: '60-80%', suelo: 'Franco', ph: '5.5-7.0' } },
+  calabaza: { icon: '🎃', name: 'Calabaza', sciName: 'Cucurbita pepo', supported: true,
+    conditions: { temp: '20-30 °C', hum: '65-85%', suelo: 'Franco', ph: '5.5-7.0' } }
+};
+
+const CROP_KEYS = Object.keys(CROP_MAP);
+
+let selectedCrop = '{{ request.args.get("cultivo","") }}';
+let selectedFile = null;
+let lastResultData = null;
+
+const NO_RECONOCIDA_DESC = 'No se pudo identificar la planta con suficiente confianza. Intenta con una foto más clara, con buena iluminación sobre un fondo uniforme.';
+const NO_RECONOCIDA_TRAT = 'Toma una nueva foto con buena iluminación, enfocando bien la hoja y repite el análisis.';
+
+const DESCRIPCIONES = {
+"Resultado_poco_confiable":NO_RECONOCIDA_DESC,
+"Apple_Scab":"Sarna del manzano. Hongo que causa manchas oscuras y agrietadas en hojas y frutos.",
+"Apple_Black_Rot":"Podredumbre negra. Hongo que oscurece y momifica los frutos.",
+"Apple_Rust":"Roya del manzano. Manchas anaranjadas con puntos negros.",
+"Apple_Healthy":"Manzano saludable. Hojas verdes y aspecto vigoroso.",
+"Cherry_Powdery_Mildew":"Mildiú polvoriento. Polvo blanco en hojas.",
+"Cherry_Healthy":"Cerezo saludable.",
+"Corn_Gray_Leaf_Spot":"Mancha gris del maíz. Lesiones alargadas gris-marrón.",
+"Corn_Common_Rust":"Roya común del maíz. Pústulas marrón rojizo.",
+"Corn_Northern_Leaf_Blight":"Tizón foliar del maíz. Lesiones marrones.",
+"Corn_Healthy":"Maíz saludable.",
+"Grape_Black_Rot":"Podredumbre negra de la vid. Manchas y momificación.",
+"Grape_Black_Measles":"Yesca de la vid. Decaimiento progresivo.",
+"Grape_Leaf_Blight_Isariopsis_Leaf_Spot":"Tizón foliar. Manchas marrones.",
+"Grape_Healthy":"Vid saludable.",
+"Orange_Rotten":"HLB. Bacteriosis grave transmitida por insectos.",
+"Peach_Bacterial_Spot":"Mancha bacteriana. Manchas oscuras.",
+"Peach_Healthy":"Durazno saludable.",
+"Pepper_Bell_Bacterial_Spot":"Mancha bacteriana del pimiento.",
+"Pepper_Bell_Healthy":"Pimiento saludable.",
+"Potato_Early_Blight":"Tizón temprano. Manchas concéntricas.",
+"Potato_Late_Blight":"Tizón tardío. Enfermedad grave.",
+"Potato_Healthy":"Papa saludable.",
+"Soybean_Healthy":"Soya saludable.",
+"Strawberry_Leaf_Scorch":"Quemadura foliar de la fresa.",
+"Strawberry_Healthy":"Fresa saludable.",
+"Tomato_Bacterial_Spot":"Mancha bacteriana del tomate.",
+"Tomato_Early_Blight":"Tizón temprano del tomate.",
+"Tomato_Late_Blight":"Tizón tardío del tomate.",
+"Tomato_Leaf_Mold":"Moho foliar del tomate.",
+"Tomato_Septoria_Leaf_Spot":"Mancha septoriosa del tomate.",
+"Tomato_Spider_Mites_Two_Spotted_Spider_Mite":"Araña roja del tomate.",
+"Tomato_Target_Spot":"Mancha objetivo del tomate.",
+"Tomato_Yellow_Leaf_Curl_Virus":"Virus del rizado amarillo del tomate.",
+"Tomato_Mosaic_Virus":"Virus del mosaico del tomate.",
+"Tomato_Healthy":"Tomate saludable."
+};
+
+const TRATAMIENTOS = {
+"Resultado_poco_confiable":NO_RECONOCIDA_TRAT,
+"Apple_Scab":"Aplica fungicida de cobre cada 7-14 días. Poda ramas afectadas.",
+"Apple_Black_Rot":"Elimina frutos momificados. Aplica fungicida.",
+"Apple_Rust":"Elimina enebros cercanos. Fungicida en primavera.",
+"Apple_Healthy":"Riego moderado y fertilización.",
+"Cherry_Powdery_Mildew":"Aplica azufre. Poda para ventilar.",
+"Cherry_Healthy":"Riego y fertilización.",
+"Corn_Gray_Leaf_Spot":"Rota cultivos. Fungicida foliar.",
+"Corn_Common_Rust":"Variedades resistentes. Fungicida.",
+"Corn_Northern_Leaf_Blight":"Rotación. Fungicida foliar.",
+"Corn_Healthy":"Fertilización balanceada.",
+"Grape_Black_Rot":"Elimina racimos. Fungicida preventivo.",
+"Grape_Black_Measles":"Poda hasta madera sana.",
+"Grape_Leaf_Blight_Isariopsis_Leaf_Spot":"Elimina hojas. Ventila.",
+"Grape_Healthy":"Poda y riego moderado.",
+"Orange_Rotten":"Sin cura. Controla vector. Elimina árboles.",
+"Peach_Bacterial_Spot":"Cobre en otoño e invierno. Poda.",
+"Peach_Healthy":"Fertilización y poda.",
+"Pepper_Bell_Bacterial_Spot":"Semillas certificadas. Cobre. Rota.",
+"Pepper_Bell_Healthy":"Riego y fertilización.",
+"Potato_Early_Blight":"Rota cultivos 3-4 años. Fungicida.",
+"Potato_Late_Blight":"Fungicida sistémico URGENTE.",
+"Potato_Healthy":"Semilla certificada.",
+"Soybean_Healthy":"Fósforo y potasio.",
+"Strawberry_Leaf_Scorch":"Elimina hojas.",
+"Strawberry_Healthy":"Renueva cada 2-3 años.",
+"Tomato_Bacterial_Spot":"Semillas certificadas. Cobre. Rota.",
+"Tomato_Early_Blight":"Fungicida preventivo. Poda.",
+"Tomato_Late_Blight":"Fungicida sistémico. Elimina plantas.",
+"Tomato_Leaf_Mold":"Ventila. Reduce humedad.",
+"Tomato_Septoria_Leaf_Spot":"Elimina hojas. Fungicida.",
+"Tomato_Spider_Mites_Two_Spotted_Spider_Mite":"Acaricida o jabón potásico.",
+"Tomato_Target_Spot":"Fungicida. Mejora drenaje.",
+"Tomato_Yellow_Leaf_Curl_Virus":"Controla mosca blanca.",
+"Tomato_Mosaic_Virus":"Elimina plantas. Desinfecta herramientas.",
+"Tomato_Healthy":"Poda semanal. Riego constante."
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  var grid = document.getElementById('cropGrid');
+  var html = '';
+  CROP_KEYS.forEach(function(key) {
+    var c = CROP_MAP[key];
+    html += '<div class="crop-card" data-cultivo="' + key + '" onclick="selectCrop(\'' + key + '\')">';
+    html += '<div class="ci">' + c.icon + '</div><div class="cn">' + c.name + '</div>';
+    html += '<div class="cs">' + c.sciName + '</div></div>';
+  });
+  grid.innerHTML = html;
+  document.getElementById('cropCount').textContent = CROP_KEYS.length;
+  if (selectedCrop && CROP_MAP[selectedCrop]) {
+    selectCrop(selectedCrop);
+    goToStep2();
+  }
+});
+
+function selectCrop(cultivo) {
+  selectedCrop = cultivo;
+  document.querySelectorAll('.crop-card').forEach(function(el) {
+    el.classList.toggle('selected', el.dataset.cultivo === cultivo);
+  });
+  document.getElementById('btnContinue').disabled = false;
+  var info = CROP_MAP[selectedCrop];
+  document.getElementById('cropHelpText').textContent = 'Cultivo seleccionado: ' + info.name;
+}
+
+function goToStep1() {
+  showStep(1);
+}
+
+function goToStep2() {
+  if (!selectedCrop) return;
+  var info = CROP_MAP[selectedCrop];
+  document.getElementById('selectedCropIcon').textContent = info.icon;
+  document.getElementById('selectedCropName').textContent = info.name;
+  document.getElementById('selectedCropSciLabel').textContent = info.sciName || '';
+  if (!info.supported) {
+    showAlert('Este cultivo estará disponible próximamente. Mientras tanto, selecciona Papa, Tomate o Maíz.');
+    return;
+  }
+  document.getElementById('alertUpload').style.display = 'none';
+  showStep(2);
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step-section').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('step' + n).classList.add('active');
+  document.querySelectorAll('.sw-step').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('step' + n + 'Label').classList.add('active');
+  for (var i = 1; i < n; i++) {
+    document.getElementById('step' + i + 'Label').classList.add('done');
+  }
+  for (var i = n; i <= 3; i++) {
+    document.getElementById('step' + i + 'Label').classList.remove('done');
+  }
+}
+
+function previewImage(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var valid = ['image/jpeg','image/png','image/webp','image/jpg'];
+  if (!valid.includes(file.type)) { showAlert('Formato no soportado. Usa JPG, PNG o WEBP.'); return; }
+  if (file.size > 10*1024*1024) { showAlert('La imagen no debe superar los 10MB.'); return; }
+  selectedFile = file;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var imgEl = document.getElementById('previewImg');
+    imgEl.onerror = function() {
+      showAlert('La imagen prevista no pudo cargarse. El archivo podría estar dañado.');
+      selectedFile = null;
+      document.getElementById('previewWrap').style.display = 'none';
+    };
+    imgEl.src = e.target.result;
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('alertUpload').style.display = 'none';
+  };
+  reader.onerror = function(e) {
+    var errMsg = reader.error ? (reader.error.message || '') : '';
+    console.warn('[CelesteAI] FileReader error:', errMsg, '(file:', file.name, ')');
+    if (errMsg.toLowerCase().includes('model does not support') || errMsg.toLowerCase().includes('cannot read')) {
+      console.warn('[CelesteAI] This error appears to come from a browser extension, not from CelesteAI.');
+    }
+    showAlert('No se pudo leer el archivo. Verifica que sea una imagen válida y cierra extensiones del navegador que puedan interferir.');
+    selectedFile = null;
+  };
+  reader.onabort = function() {
+    showAlert('Lectura de imagen cancelada.');
+    selectedFile = null;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showAlert(msg) {
+  var el = document.getElementById('alertUpload');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function fmt(s) { return s ? s.replace(/_/g,' ') : 'Desconocido'; }
+function desc(clase,sana) { return DESCRIPCIONES[clase] || (sana ? 'Tu planta está saludable.' : 'Se detectó una posible enfermedad.'); }
+function trat(clase) { return TRATAMIENTOS[clase] || 'Consulta con un agrónomo.'; }
+function icono(clase) {
+  if (clase === 'Resultado_poco_confiable') return '❓';
+  if (!clase) return '🌿'; var c = clase.toLowerCase();
+  if (c.includes('apple')) return '🍎'; if (c.includes('blueberry')) return '🫐'; if (c.includes('cherry')) return '🍒';
+  if (c.includes('corn')||c.includes('maize')) return '🌽'; if (c.includes('grape')) return '🍇'; if (c.includes('orange')||c.includes('citrus')) return '🍊';
+  if (c.includes('peach')) return '🍑'; if (c.includes('pepper')||c.includes('bellpepper')) return '🌶️'; if (c.includes('potato')) return '🥔';
+  if (c.includes('raspberry')) return '🍇'; if (c.includes('soybean')) return '🫘'; if (c.includes('squash')) return '🎃';
+  if (c.includes('strawberry')) return '🍓'; if (c.includes('tomato')) return '🍅'; if (c.includes('banana')) return '🍌';
+  if (c.includes('carrot')) return '🥕'; if (c.includes('cassava')) return '🌿'; if (c.includes('chili')) return '🌶️';
+  if (c.includes('coffee')) return '☕'; if (c.includes('cucumber')) return '🥒'; if (c.includes('guava')) return '🍈';
+  if (c.includes('mango')) return '🥭'; if (c.includes('rice')) return '🌾'; if (c.includes('tea')) return '🍵';
+  if (c.includes('wheat')) return '🌾'; if (c.includes('sugarcane')) return '🎋'; if (c.includes('pomegranate')) return '🍅';
+  return '🌿';
+}
+
+function nivelConfianza(pct){
+  if(pct>=85)return{text:'Alta confianza',cls:'high'};
+  if(pct>=65)return{text:'Media confianza',cls:'med'};
+  return{text:'Baja confianza',cls:'low'};
+}
+
+function getSciName(clase) {
+  if (!clase) return '';
+  var c = clase.toLowerCase();
+  if (c.includes('apple')) return 'Malus domestica';
+  if (c.includes('blueberry')) return 'Vaccinium corymbosum';
+  if (c.includes('cherry')) return 'Prunus avium';
+  if (c.includes('corn')||c.includes('maize')) return 'Zea mays';
+  if (c.includes('grape')) return 'Vitis vinifera';
+  if (c.includes('orange')) return 'Citrus sinensis';
+  if (c.includes('peach')) return 'Prunus persica';
+  if (c.includes('pepper')) return 'Capsicum annuum';
+  if (c.includes('potato')) return 'Solanum tuberosum';
+  if (c.includes('raspberry')) return 'Rubus idaeus';
+  if (c.includes('soybean')) return 'Glycine max';
+  if (c.includes('squash')) return 'Cucurbita pepo';
+  if (c.includes('strawberry')) return 'Fragaria × ananassa';
+  if (c.includes('tomato')) return 'Solanum lycopersicum';
+  return '';
+}
+
+function getSintomas(clase) {
+  var c = (clase||'').toLowerCase();
+  if (c.includes('early_blight')||c.includes('tizón temprano')) return ['Manchas marrones con anillos concéntricos','Clorosis alrededor de las lesiones','Hojas inferiores afectadas primero','Caída prematura de hojas'];
+  if (c.includes('late_blight')||c.includes('tizón tardío')) return ['Manchas acuosas irregulares','Moho blanco en el envés','Podredumbre de frutos','Olor a humedad'];
+  if (c.includes('bacterial_spot')) return ['Manchas oscuras acuosas','Halos amarillentos','Lesiones en frutos','Caída de hojas'];
+  if (c.includes('septoria')) return ['Manchas circulares pequeñas','Bordes oscuros con centro claro','Puntos negros en lesiones','Hojas inferiores amarillas'];
+  if (c.includes('leaf_mold')||c.includes('moho')) return ['Manchas amarillas en haz','Moho verde oliva en envés','Hojas enrolladas','Debilitamiento general'];
+  if (c.includes('spider_mites')||c.includes('araña')) return ['Punteado amarillo en hojas','Telarañas finas','Decoloración progresiva','Hojas secas'];
+  if (c.includes('target_spot')) return ['Lesiones concéntricas','Manchas marrón oscuro','Anillos en frutos','Defoliación'];
+  if (c.includes('mosaic_virus')) return ['Moteado verde claro/oscuro','Deformación de hojas','Enanismo','Frutos deformes'];
+  if (c.includes('yellow_leaf_curl')||c.includes('rizado')) return ['Hojas enrolladas hacia arriba','Amarillamiento','Acortamiento de entrenudos','Frutos pequeños'];
+  if (c.includes('powdery_mildew')||c.includes('polvoriento')) return ['Polvo blanco en hojas','Hojas distorsionadas','Crecimiento raquítico','Brotes afectados'];
+  if (c.includes('black_rot')||c.includes('negra')||c.includes('podredumbre')) return ['Manchas marrones oscuras','Podredumbre de frutos','Momificación','Lesiones en tallos'];
+  if (c.includes('rust')||c.includes('roya')) return ['Pústulas marrón rojizo','Polvo anaranjado','Hojas amarillas','Defoliación'];
+  if (c.includes('esca')) return ['Decaimiento progresivo','Pudrición del tallo','Hojas pequeñas','Muerte regresiva'];
+  if (c.includes('healthy')||c.includes('saludable')) return ['Hojas verdes uniformes','Crecimiento vigoroso','Sin manchas ni deformaciones','Aspecto general sano'];
+  return ['Síntomas visuales detectados en la planta','Requiere evaluación detallada','Monitoreo continuo recomendado'];
+}
+
+async function analyze() {
+  if (!selectedFile) { showAlert('Selecciona una imagen primero.'); return; }
+  if (!selectedCrop) { showAlert('Selecciona un cultivo.'); return; }
+  if (selectedFile.size === 0) { showAlert('El archivo está vacío. Selecciona otra imagen.'); selectedFile = null; return; }
+
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('loadingIndicator').style.display = 'block';
+  document.getElementById('step3').classList.remove('active');
+
+  // Rotate loading messages
+  var loadingMsgs = ['Procesando imagen...', 'Analizando con IA...', 'Generando diagnóstico...'];
+  var msgIdx = 0;
+  var loadInterval = setInterval(function() {
+    msgIdx = (msgIdx + 1) % loadingMsgs.length;
+    document.getElementById('loadingText').textContent = loadingMsgs[msgIdx];
+  }, 2000);
+
+  var fd = new FormData();
+  fd.append('image', selectedFile);
+  fd.append('cultivo', selectedCrop);
+
+  try {
+    var r = await fetch('/predecir', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body: fd});
+    if (r.redirected) { window.location.href = r.url; return; }
+    if (!r.ok) {
+      var errData = null;
+      try { errData = await r.json(); } catch(ee) {}
+      var errMsg = errData && errData.error ? errData.error : 'Error del servidor (' + r.status + ').';
+      showAlert(errMsg);
+      clearInterval(loadInterval);
+      document.getElementById('loadingIndicator').style.display = 'none';
+      document.getElementById('previewWrap').style.display = 'block';
+      return;
+    }
+    var d = await r.json();
+    if (d.error) { showAlert(d.error); clearInterval(loadInterval); document.getElementById('loadingIndicator').style.display = 'none'; document.getElementById('previewWrap').style.display = 'block'; return; }
+
+    clearInterval(loadInterval);
+    document.getElementById('loadingIndicator').style.display = 'none';
+    lastResultData = d;
+
+    // ── Populate 3-column panel ──
+    var cropInfo = CROP_MAP[selectedCrop];
+    document.getElementById('resultCropIcon').textContent = cropInfo.icon;
+    document.getElementById('resultCropName').textContent = cropInfo.name;
+    document.getElementById('resultCropSciName').textContent = cropInfo.sciName || '';
+
+    var previewSrc = document.getElementById('previewImg').src;
+    document.getElementById('resultPreviewImg').src = previewSrc;
+
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('es-ES', { year:'numeric', month:'long', day:'numeric' });
+    document.getElementById('infoDate').textContent = dateStr;
+    document.getElementById('infoFormat').textContent = (selectedFile.type || 'JPEG').toUpperCase();
+
+    var tmpImg = new Image();
+    tmpImg.onload = function() {
+      document.getElementById('infoResolution').textContent = tmpImg.naturalWidth + 'x' + tmpImg.naturalHeight + ' px';
+    };
+    tmpImg.src = previewSrc;
+
+    // ── Populate Diagnosis Panel ──
+    var p = d.principal;
+    var sana = p.es_sana;
+    var pct = (p.confianza * 100).toFixed(1);
+    var nombre = fmt(p.clase);
+    var des = desc(p.clase, sana);
+    var tr = trat(p.clase);
+    var ico = icono(p.clase);
+    var sciName = getSciName(p.clase);
+
+    var statusClass = 'healthy';
+    var statusText = 'Saludable';
+    if (p.clase === 'Resultado_poco_confiable') { statusClass = 'low-confidence'; statusText = 'Poco confiable'; }
+    else if (!sana) { statusClass = 'diseased'; statusText = 'Enfermedad'; }
+
+    var diagCard = document.getElementById('diagnosisPanel');
+    diagCard.className = 'diag-card ' + statusClass;
+
+    var diagHdr = document.getElementById('diagHeader');
+    diagHdr.className = 'diag-hdr ' + statusClass;
+
+    document.getElementById('diagIcon').textContent = ico;
+    document.getElementById('diagName').textContent = nombre;
+    document.getElementById('diagSciName').textContent = sciName;
+
+    var badge = document.getElementById('diagBadge');
+    badge.textContent = statusText;
+    if (statusClass === 'diseased') { badge.className = 'badge badge-red'; }
+    else if (statusClass === 'healthy') { badge.className = 'badge badge-green'; }
+    else { badge.className = 'badge badge-yellow'; }
+
+    document.getElementById('diagConfianza').textContent = pct + '%';
+    document.getElementById('diagBar').style.width = pct + '%';
+    var nl = nivelConfianza(parseFloat(pct));
+    document.getElementById('diagNivel').textContent = nl.text;
+    var barEl = document.getElementById('diagBar');
+    barEl.className = 'cnf-fill-lg ' + nl.cls;
+    document.getElementById('diagDesc').textContent = des;
+
+    // Symptoms
+    var sintomas = getSintomas(p.clase);
+    var symptomHtml = sintomas.map(function(s) {
+      return '<div class="symptom-item"><span class="si-check"><i class="fas fa-check"></i></span>' + s + '</div>';
+    }).join('');
+    document.getElementById('symptomList').innerHTML = symptomHtml;
+
+    // ── Recommendations Panel ──
+    var trats = tr.split('. ').filter(function(t){return t.trim().length > 0});
+    var treatIcons = ['💊','🌿','💧','🧪','🛡️','🌱'];
+    var treatHtml = trats.map(function(t, i) {
+      var icon = treatIcons[i % treatIcons.length];
+      return '<div class="treat-item"><div class="ti-icon">' + icon + '</div><div class="ti-text"><strong>Tratamiento ' + (i+1) + '</strong><span>' + t.trim() + '</span></div></div>';
+    }).join('') || '<div style="color:var(--muted);font-size:0.82rem;padding:8px 0">Consulta con un agrónomo para tratamientos específicos.</div>';
+    document.getElementById('treatGrid').innerHTML = treatHtml;
+
+    // Prevention (static recommendations based on disease type)
+    var prevItems = ['Rotar cultivos cada temporada','Usar semillas certificadas','Mantener distancia entre plantas','Eliminar restos de cosecha','Monitoreo semanal de síntomas'];
+    if (sana) prevItems = ['Mantener riego equilibrado','Fertilización periódica','Monitoreo regular','Podas de mantenimiento'];
+    var prevHtml = prevItems.map(function(p) {
+      return '<div class="prev-item"><span class="pi-check"><i class="fas fa-check"></i></span>' + p + '</div>';
+    }).join('');
+    document.getElementById('prevList').innerHTML = prevHtml;
+
+    // ── Update conditions for crop ──
+    var cond = cropInfo.conditions || {};
+    document.getElementById('condTemp').textContent = cond.temp || '—';
+    document.getElementById('condHum').textContent = cond.hum || '—';
+    document.getElementById('condSuelo').textContent = cond.suelo || '—';
+    document.getElementById('condPh').textContent = cond.ph || '—';
+
+    // ── Show step 3 ──
+    showStep(3);
+
+    // ── Add disease detail sections if available ──
+    if (d.enfermedad) {
+      var e = d.enfermedad;
+      var extraHtml = '';
+      if (e.sintomas && Array.isArray(e.sintomas)) {
+        var extraSyms = e.sintomas.map(function(s) {
+          return '<div class="symptom-item"><span class="si-check"><i class="fas fa-check"></i></span>' + s + '</div>';
+        }).join('');
+        if (extraSyms) {
+          document.getElementById('symptomList').insertAdjacentHTML('beforeend', extraSyms);
+        }
+      }
+    }
+
+    if (d.recomendaciones && d.recomendaciones.recomendaciones) {
+      var extraTreats = d.recomendaciones.recomendaciones.map(function(r) {
+        return '<div class="treat-item"><div class="ti-icon">' + (r.icono||'🌱') + '</div><div class="ti-text"><strong>' + r.accion + '</strong><span>' + r.detalle + '</span></div></div>';
+      }).join('');
+      if (extraTreats) {
+        document.getElementById('treatGrid').insertAdjacentHTML('beforeend', extraTreats);
+      }
+    }
+
+    // ── Ask to add to huerto ──
+    var cropName = CROP_MAP[selectedCrop] ? CROP_MAP[selectedCrop].name : selectedCrop;
+    if (confirm('¿Deseas agregar "' + cropName + '" al seguimiento de tu huerto?')) {
+      fetch('{{ url_for("analisis.add_crop") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({crop_name: cropName})
+      }).then(function(r){return r.json()}).then(function(d){
+        if (d.success) {
+          var toast = document.getElementById('analisisToast');
+          if (toast) { toast.className = 'analisis-toast show'; toast.querySelector('span').textContent = '✅ Cultivo agregado a tu huerto.'; setTimeout(function(){toast.className = 'analisis-toast'}, 3000); }
+          else alert('✅ Cultivo agregado a tu huerto.');
+        }
+      }).catch(function(){});
+    }
+
+  } catch(e) {
+    console.error('[CelesteAI] Error en analyze():', e.message || e, 'Cultivo:', selectedCrop, 'Archivo:', selectedFile ? selectedFile.name : 'null');
+    clearInterval(loadInterval);
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('previewWrap').style.display = 'block';
+    showAlert('Error de conexión al analizar. Verifica tu conexión e intenta de nuevo.');
+  }
+}
+</script>
+</body>
+</html>

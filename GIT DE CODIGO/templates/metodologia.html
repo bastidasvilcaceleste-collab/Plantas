@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CelesteAI — Metodología de Investigación</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+:root{--primary:#1b7a3d;--primary-d:#0f5c2a;--primary-l:#e8f5e9;--primary-xl:#f1f8f0;--accent:#e65100;--danger:#dc2626;--warning:#d97706;--blue:#1565c0;--blue-l:#e3f2fd;--bg:#f5f7fa;--white:#fff;--dark:#1a1a1a;--muted:#6b7280;--muted-l:#9ca3b0;--border:#e5e7eb;--border-l:#f0f0f0;--radius-sm:8px;--radius:12px;--radius-lg:16px;--radius-xl:20px;--shadow:0 2px 12px rgba(0,0,0,0.06);--shadow-h:0 8px 30px rgba(0,0,0,0.1);--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.met-section{margin-bottom:28px}
+.met-header{margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px}
+.met-header h1{font-size:1.5rem;font-weight:800;letter-spacing:-0.3px;margin-bottom:4px}
+.met-header p{color:var(--muted);font-size:0.85rem;margin:0}
+/* Info cards row */
+.met-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px}
+.met-info-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;transition:all .25s}
+.met-info-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+.met-info-card .mic-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:8px;flex-shrink:0}
+.met-info-card .mic-icon.purple{background:#f3e5f5;color:#7b1fa2}
+.met-info-card .mic-icon.green{background:var(--primary-l);color:var(--primary)}
+.met-info-card .mic-icon.blue{background:var(--blue-l);color:var(--blue)}
+.met-info-card .mic-icon.orange{background:#fff3e0;color:var(--accent)}
+.met-info-card h6{font-weight:700;font-size:0.82rem;margin-bottom:4px}
+.met-info-card .mic-items{display:flex;flex-direction:column;gap:2px}
+.met-info-card .mic-items span{font-size:0.78rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.met-info-card .mic-items span i{font-size:0.55rem;color:var(--primary)}
+/* Problem section */
+.met-problem{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:24px;margin-bottom:28px}
+.met-problem h5{font-weight:700;font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.met-problem h5 i{color:var(--primary)}
+.met-problem p{font-size:0.85rem;color:var(--muted);line-height:1.8;margin-bottom:16px}
+.met-problem .met-formula{background:var(--primary-xl);border:1px solid #c8e0ce;border-radius:var(--radius);padding:16px 20px;border-left:4px solid var(--primary)}
+.met-problem .met-formula p{font-size:0.85rem;color:var(--primary-d);font-weight:500;margin:0;font-style:italic}
+/* Objectives grid (3 cols) */
+.met-obj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px}
+.met-obj-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:22px;transition:all .25s}
+.met-obj-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+.met-obj-card .moc-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;margin-bottom:10px}
+.met-obj-card .moc-icon.green{background:var(--primary-l);color:var(--primary)}
+.met-obj-card .moc-icon.blue{background:var(--blue-l);color:var(--blue)}
+.met-obj-card .moc-icon.orange{background:#fff3e0;color:var(--accent)}
+.met-obj-card h6{font-weight:700;font-size:0.88rem;margin-bottom:6px}
+.met-obj-card p{font-size:0.82rem;color:var(--muted);line-height:1.7;margin:0}
+.met-obj-card ul{padding:0;margin:0;list-style:none}
+.met-obj-card ul li{font-size:0.82rem;color:var(--muted);line-height:1.7;padding:4px 0 4px 20px;position:relative}
+.met-obj-card ul li::before{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;left:0;color:var(--primary);font-size:0.65rem;top:6px}
+.met-obj-card .moc-var{margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm)}
+.met-obj-card .moc-var strong{display:block;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px}
+.met-obj-card .moc-var span{font-size:0.8rem;color:var(--dark);font-weight:500}
+/* Variables section */
+.met-vars{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+.met-var-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:22px;transition:all .25s}
+.met-var-card:hover{box-shadow:var(--shadow-h)}
+.met-var-card h6{font-weight:700;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.met-var-card .mvc-sub{font-size:0.82rem;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.met-var-card .mvc-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:10px}
+.met-var-card .mvc-icon.indep{background:var(--blue-l);color:var(--blue)}
+.met-var-card .mvc-icon.dep{background:var(--primary-l);color:var(--primary)}
+.met-var-card .mvc-dims{display:flex;flex-wrap:wrap;gap:6px}
+.met-var-card .mvc-dims span{background:var(--bg);border:1px solid var(--border);border-radius:50px;padding:5px 14px;font-size:0.75rem;font-weight:500;color:var(--muted)}
+/* Methodology timeline */
+.met-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
+.met-step{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:22px 18px;text-align:center;position:relative;transition:all .25s}
+.met-step:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.met-step:not(:last-child)::after{content:'\f054';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--border);font-size:0.8rem}
+.met-step .ms-num{width:36px;height:36px;border-radius:50%;background:var(--primary);color:var(--white);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;margin:0 auto 10px}
+.met-step h6{font-weight:700;font-size:0.82rem;margin-bottom:4px}
+.met-step p{font-size:0.76rem;color:var(--muted);line-height:1.5;margin:0}
+/* Population section */
+.met-pop{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:24px;margin-bottom:28px}
+.met-pop h5{font-weight:700;font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.met-pop h5 i{color:var(--primary)}
+.met-pop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.met-pop-block h6{font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.met-pop-block h6 i{color:var(--primary)}
+.met-pop-block p{font-size:0.82rem;color:var(--dark);line-height:1.6;margin-bottom:6px}
+.met-pop-block ul{padding:0;margin:0;list-style:none}
+.met-pop-block ul li{font-size:0.8rem;color:var(--muted);padding:3px 0 3px 18px;position:relative;line-height:1.5}
+.met-pop-block ul li::before{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;left:0;color:var(--primary);font-size:0.6rem;top:5px}
+/* Design card */
+.met-design{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:24px;margin-bottom:28px;display:flex;gap:24px;align-items:center}
+.met-design .md-left{flex:1}
+.met-design .md-left h5{font-weight:700;font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.met-design .md-left h5 i{color:var(--primary)}
+.met-design .md-right{flex-shrink:0;text-align:center;font-size:4rem;opacity:0.12;line-height:1}
+.met-design-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.met-design-item{padding:8px 12px;background:var(--bg);border-radius:var(--radius-sm);font-size:0.82rem;display:flex;align-items:center;gap:8px}
+.met-design-item .mdi-label{color:var(--muted);min-width:90px}
+.met-design-item .mdi-value{font-weight:600}
+/* Footer banner */
+.met-footer-banner{background:var(--primary-xl);border:1px solid #c8e0ce;border-radius:var(--radius-lg);padding:18px 24px;text-align:center;margin-bottom:28px}
+.met-footer-banner p{font-size:0.82rem;color:var(--primary-d);margin:0;line-height:1.6;opacity:0.85}
+/* Responsive */
+@media(max-width:1200px){
+.met-info-grid{grid-template-columns:repeat(2,1fr)}
+.met-obj-grid{grid-template-columns:1fr}
+.met-steps{grid-template-columns:repeat(3,1fr)}
+.met-steps .met-step:nth-child(3)::after{display:none}
+.met-vars{grid-template-columns:1fr}
+.met-pop-grid{grid-template-columns:1fr}
+}
+@media(max-width:992px){
+.met-design{flex-direction:column}
+.met-design .md-right{display:none}
+}
+@media(max-width:768px){
+.met-info-grid{grid-template-columns:1fr}
+.met-steps{grid-template-columns:1fr}
+.met-steps .met-step::after{display:none}
+.met-design-grid{grid-template-columns:1fr}
+.met-header{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+{% include '_sidebar.html' %}
+
+<main class="main">
+  {% include '_topbar.html' %}
+  <div class="main-inner">
+
+    <!-- HEADER -->
+    <div class="met-header">
+      <div>
+        <h1>Metodología de la Investigación (Tesis)</h1>
+        <p>Estructura metodológica del proyecto de investigación</p>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="alert('📄 Exportar metodología próximamente.')"><i class="fas fa-file-export"></i> Exportar metodología</button>
+    </div>
+
+    <!-- 4 INFO CARDS -->
+    <div class="met-info-grid">
+      <div class="met-info-card">
+        <div class="mic-icon purple"><i class="fas fa-brain"></i></div>
+        <h6>Enfoque de investigación</h6>
+        <div class="mic-items">
+          <span><i class="fas fa-circle"></i> Cuantitativo</span>
+          <span><i class="fas fa-circle"></i> Enfoque deductivo</span>
+        </div>
+      </div>
+      <div class="met-info-card">
+        <div class="mic-icon green"><i class="fas fa-clipboard-list"></i></div>
+        <h6>Tipo de investigación</h6>
+        <div class="mic-items">
+          <span><i class="fas fa-circle"></i> Aplicada</span>
+          <span><i class="fas fa-circle"></i> Explicativa</span>
+        </div>
+      </div>
+      <div class="met-info-card">
+        <div class="mic-icon blue"><i class="fas fa-flask"></i></div>
+        <h6>Diseño de investigación</h6>
+        <div class="mic-items">
+          <span><i class="fas fa-circle"></i> No experimental</span>
+          <span><i class="fas fa-circle"></i> Transversal</span>
+        </div>
+      </div>
+      <div class="met-info-card">
+        <div class="mic-icon orange"><i class="fas fa-microscope"></i></div>
+        <h6>Técnica principal</h6>
+        <div class="mic-items">
+          <span><i class="fas fa-circle"></i> Observación</span>
+          <span><i class="fas fa-circle"></i> Análisis de imágenes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROBLEM -->
+    <div class="met-problem">
+      <h5><i class="fas fa-question-circle"></i> Problema de investigación</h5>
+      <p>En las zonas agrícolas de Huancayo, Junín, los agricultores enfrentan pérdidas significativas en sus cultivos debido a enfermedades en plantas que no son detectadas a tiempo. La identificación tradicional por métodos manuales resulta lenta, subjetiva y requiere experiencia especializada, lo que afecta la productividad y sostenibilidad de los cultivos.</p>
+      <div class="met-formula">
+        <p><i class="fas fa-quote-left" style="margin-right:6px;opacity:0.5"></i> ¿Cómo mejorar la detección temprana y precisa de enfermedades en plantas de cultivo mediante redes neuronales convolucionales con ajuste fino en imágenes de campo en Huancayo, Junín?</p>
+      </div>
+    </div>
+
+    <!-- OBJECTIVES & HYPOTHESIS -->
+    <div class="met-obj-grid">
+      <div class="met-obj-card">
+        <div class="moc-icon green"><i class="fas fa-bullseye"></i></div>
+        <h6>Objetivo general</h6>
+        <p>Desarrollar un sistema inteligente basado en redes neuronales convolucionales con ajuste fino para la detección temprana y precisa de enfermedades en plantas de cultivo en Huancayo, Junín.</p>
+      </div>
+      <div class="met-obj-card">
+        <div class="moc-icon blue"><i class="fas fa-list-check"></i></div>
+        <h6>Objetivos específicos</h6>
+        <ul>
+          <li>Construir y preparar un dataset de imágenes de plantas con y sin enfermedades.</li>
+          <li>Entrenar y ajustar modelos CNN mediante transfer learning.</li>
+          <li>Evaluar el rendimiento del modelo entrenado con métricas de clasificación.</li>
+          <li>Desarrollar una aplicación web para la detección de enfermedades en plantas.</li>
+        </ul>
+      </div>
+      <div class="met-obj-card">
+        <div class="moc-icon orange"><i class="fas fa-lightbulb"></i></div>
+        <h6>Hipótesis</h6>
+        <p>El uso de redes neuronales convolucionales con ajuste fino en imágenes de campo permite detectar enfermedades en plantas con una precisión mayor al 85%, superando los métodos tradicionales de identificación.</p>
+        <div class="moc-var"><strong>Variable independiente</strong><span>Uso de CNN con ajuste fino</span></div>
+        <div class="moc-var"><strong>Variable dependiente</strong><span>Precisión en la detección de enfermedades</span></div>
+      </div>
+    </div>
+
+    <!-- VARIABLES -->
+    <div class="met-vars">
+      <div class="met-var-card">
+        <div class="mvc-icon indep"><i class="fas fa-cogs"></i></div>
+        <h6>Variable independiente</h6>
+        <div class="mvc-sub">Redes neuronales convolucionales con ajuste fino</div>
+        <div class="mvc-dims">
+          <span>Arquitectura del modelo</span>
+          <span>Parámetros de entrenamiento</span>
+          <span>Tipo de dataset</span>
+          <span>Imágenes de campo</span>
+        </div>
+      </div>
+      <div class="met-var-card">
+        <div class="mvc-icon dep"><i class="fas fa-chart-line"></i></div>
+        <h6>Variable dependiente</h6>
+        <div class="mvc-sub">Precisión en la detección de enfermedades en plantas</div>
+        <div class="mvc-dims">
+          <span>Exactitud (Accuracy)</span>
+          <span>Precisión (Precision)</span>
+          <span>Exhaustividad (Recall)</span>
+          <span>F1-Score</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- METHODOLOGY STEPS -->
+    <div class="section-title-sm" style="margin-bottom:16px"><i class="fas fa-tasks"></i> Metodología</div>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:18px;line-height:1.6">Proceso metodológico de la investigación para el desarrollo del sistema de detección de enfermedades.</p>
+
+    <div class="met-steps">
+      <div class="met-step">
+        <div class="ms-num">1</div>
+        <h6>Recolección de datos</h6>
+        <p>Captura de imágenes de plantas sanas y con enfermedades en campos de Huancayo, Junín.</p>
+      </div>
+      <div class="met-step">
+        <div class="ms-num">2</div>
+        <h6>Preprocesamiento</h6>
+        <p>Limpieza, redimensionado, normalización y aumento de datos.</p>
+      </div>
+      <div class="met-step">
+        <div class="ms-num">3</div>
+        <h6>Entrenamiento del modelo</h6>
+        <p>Uso de CNN con transfer learning y ajuste fino del modelo.</p>
+      </div>
+      <div class="met-step">
+        <div class="ms-num">4</div>
+        <h6>Evaluación</h6>
+        <p>Evaluación del modelo con métricas de clasificación en el conjunto de prueba.</p>
+      </div>
+      <div class="met-step">
+        <div class="ms-num">5</div>
+        <h6>Implementación</h6>
+        <p>Desarrollo de aplicación web para detección en tiempo real.</p>
+      </div>
+    </div>
+
+    <!-- POPULATION -->
+    <div class="met-pop">
+      <h5><i class="fas fa-users"></i> Población, muestra e instrumentos</h5>
+      <div class="met-pop-grid">
+        <div class="met-pop-block">
+          <h6><i class="fas fa-globe-americas"></i> Población</h6>
+          <p>Cultivos de papa, tomate y maíz en zonas agrícolas de Huancayo, Junín.</p>
+        </div>
+        <div class="met-pop-block">
+          <h6><i class="fas fa-chart-pie"></i> Muestra</h6>
+          <p>1,200 imágenes de plantas (enfermas y sanas):</p>
+          <ul>
+            <li>Papa: 400 imágenes</li>
+            <li>Tomate: 400 imágenes</li>
+            <li>Maíz: 400 imágenes</li>
+          </ul>
+        </div>
+        <div class="met-pop-block">
+          <h6><i class="fas fa-tools"></i> Instrumentos</h6>
+          <ul>
+            <li>Cámara fotográfica / Smartphone</li>
+            <li>Software de etiquetado</li>
+            <li>Python, TensorFlow, Keras</li>
+            <li>Aplicación web Flask</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- DESIGN -->
+    <div class="met-design">
+      <div class="md-left">
+        <h5><i class="fas fa-sitemap"></i> Diseño de investigación</h5>
+        <div class="met-design-grid">
+          <div class="met-design-item"><span class="mdi-label">Enfoque:</span><span class="mdi-value">Cuantitativo</span></div>
+          <div class="met-design-item"><span class="mdi-label">Tipo:</span><span class="mdi-value">Aplicada</span></div>
+          <div class="met-design-item"><span class="mdi-label">Nivel:</span><span class="mdi-value">Explicativa</span></div>
+          <div class="met-design-item"><span class="mdi-label">Diseño:</span><span class="mdi-value">No experimental</span></div>
+          <div class="met-design-item"><span class="mdi-label">Corte:</span><span class="mdi-value">Transversal</span></div>
+          <div class="met-design-item"><span class="mdi-label">Lugar:</span><span class="mdi-value">Huancayo, Junín</span></div>
+        </div>
+      </div>
+      <div class="md-right">📊</div>
+    </div>
+
+    <!-- FOOTER BANNER -->
+    <div class="met-footer-banner">
+      <p>Esta metodología está basada en el enfoque científico y en las normas establecidas para trabajos de investigación universitaria.</p>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

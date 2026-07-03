@@ -1,0 +1,21 @@
+[
+  "Corn_Common_Rust",
+  "Corn_Gray_Leaf_Spot",
+  "Corn_Healthy",
+  "Corn_Northern_Leaf_Blight",
+  "Potato_Early_Blight",
+  "Potato_Healthy",
+  "Potato_Late_Blight",
+  "Potato_Rotten",
+  "Tomato_Bacterial_Spot",
+  "Tomato_Early_Blight",
+  "Tomato_Healthy",
+  "Tomato_Late_Blight",
+  "Tomato_Leaf_Mold",
+  "Tomato_Mosaic_Virus",
+  "Tomato_Rotten",
+  "Tomato_Septoria_Leaf_Spot",
+  "Tomato_Spider_Mites_Two_Spotted_Spider_Mite",
+  "Tomato_Target_Spot",
+  "Tomato_Yellow_Leaf_Curl_Virus"
+]

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultado — CelesteAI</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+body{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.rw{width:100%;max-width:560px;animation:up .5s ease}
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.result-main{border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.result-main.diseased{background:#fffafb;border:1.5px solid #fecaca}
+.result-main.healthy{background:var(--primary-xl);border:1.5px solid #c8e0ce}
+.result-main.low-confidence{background:var(--warning-l);border:1.5px solid #fde68a}
+.result-header{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.result-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+.result-icon.diseased{background:#fee2e2}
+.result-icon.healthy{background:var(--primary-l)}
+.result-icon.low-confidence{background:#fef3c7}
+.result-pct{font-size:1.4rem;font-weight:800;line-height:1.2}
+.result-pct.diseased{color:#dc2626}
+.result-pct.healthy{color:var(--primary)}
+.result-pct.low-confidence{color:#d97706}
+.result-status{font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:50px;display:inline-block}
+.result-status.diseased{background:#fee2e2;color:#dc2626}
+.result-status.healthy{background:var(--primary-l);color:var(--primary)}
+.result-status.low-confidence{background:#fef3c7;color:#d97706}
+.conf-bar{height:10px;border-radius:5px;background:var(--border);overflow:hidden;margin:8px 0 4px}
+.conf-fill{height:100%;border-radius:5px;transition:width .8s ease}
+.conf-fill.high{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.conf-fill.med{background:linear-gradient(90deg,#fbbf24,#d97706)}
+.conf-fill.low{background:linear-gradient(90deg,#fca5a5,#dc2626)}
+.conf-high{color:#16a34a}.conf-med{color:#d97706}.conf-low{color:#dc2626}
+.result-name{font-size:1.1rem;font-weight:800;margin:8px 0 6px}
+.result-desc{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:8px}
+.result-section{background:var(--white);border-radius:var(--radius-lg);padding:20px;border:1px solid var(--border);margin-bottom:16px}
+.result-section h6{font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.rec-list{display:flex;flex-direction:column;gap:10px}
+.rec-item{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border-l)}
+.rec-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--primary-l)}
+.rec-text{flex:1;min-width:0}
+.rec-text strong{display:block;font-size:0.8rem;font-weight:700;margin-bottom:2px}
+.rec-text span{font-size:0.78rem;color:var(--muted);line-height:1.5}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="rw">
+  <div class="card" style="padding:0;border:none;overflow:hidden">
+    <div style="padding:28px 28px 0">
+      <div class="result-crop-badge">🌱 Resultado del análisis</div>
+    </div>
+    <div style="padding:0 28px" id="resultContainer"></div>
+    <div class="btn-group" style="padding:20px 28px 28px">
+      <a href="{{ url_for('analisis.dashboard') }}" class="btn btn-outline"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
+      <a href="{{ url_for('analisis.analizar') }}" class="btn btn-primary"><i class="fas fa-redo me-1"></i> Nuevo análisis</a>
+      <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print me-1"></i> Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// DICCIONARIOS PARA DESCRIPCIONES Y TRATAMIENTOS
+// ============================================
+
+const NO_RECONOCIDA_DESC = 'No se pudo identificar la planta con suficiente confianza. Intenta con una foto más clara con buena iluminación y sobre un fondo uniforme.';
+const NO_RECONOCIDA_TRAT = 'Toma una nueva foto con buena iluminación, enfocando bien la hoja, y repite el análisis. Si el problema persiste, consulta a un agrónomo.';
+
+const DESCRIPCIONES = {
+  "Resultado_poco_confiable": NO_RECONOCIDA_DESC,
+  "Apple_Scab": "Sarna del manzano. Hongo que causa manchas oscuras y agrietadas en hojas y frutos.",
+  "Apple_Black_Rot": "Podredumbre negra. Hongo que oscurece y momifica los frutos.",
+  "Apple_Rust": "Roya del manzano. Manchas anaranjadas con puntos negros.",
+  "Apple_Healthy": "Manzano saludable. Hojas verdes y aspecto vigoroso.",
+  "Cherry_Powdery_Mildew": "Mildiú polvoriento. Polvo blanco en hojas.",
+  "Cherry_Healthy": "Cerezo saludable.",
+  "Corn_Gray_Leaf_Spot": "Mancha gris del maíz. Lesiones alargadas gris-marrón.",
+  "Corn_Common_Rust": "Roya común del maíz. Pústulas marrón rojizo.",
+  "Corn_Northern_Leaf_Blight": "Tizón foliar del maíz. Lesiones marrones.",
+  "Corn_Healthy": "Maíz saludable.",
+  "Grape_Black_Rot": "Podredumbre negra de la vid. Manchas y momificación.",
+  "Grape_Black_Measles": "Yesca de la vid. Decaimiento progresivo.",
+  "Grape_Leaf_Blight_Isariopsis_Leaf_Spot": "Tizón foliar. Manchas marrones.",
+  "Grape_Healthy": "Vid saludable.",
+  "Orange_Rotten": "HLB. Bacteriosis grave transmitida por insectos.",
+  "Peach_Bacterial_Spot": "Mancha bacteriana. Manchas oscuras.",
+  "Peach_Healthy": "Durazno saludable.",
+  "Pepper_Bell_Bacterial_Spot": "Mancha bacteriana del pimiento.",
+  "Pepper_Bell_Healthy": "Pimiento saludable.",
+  "Potato_Early_Blight": "Tizón temprano. Manchas concéntricas. Enfermedad fúngica común.",
+  "Potato_Late_Blight": "Tizón tardío. Enfermedad grave causada por Phytophthora infestans.",
+  "Potato_Healthy": "Papa saludable. Sin signos de enfermedad.",
+  "Soybean_Healthy": "Soya saludable.",
+  "Strawberry_Leaf_Scorch": "Quemadura foliar de la fresa.",
+  "Strawberry_Healthy": "Fresa saludable.",
+  "Tomato_Bacterial_Spot": "Mancha bacteriana del tomate. Causada por Xanthomonas.",
+  "Tomato_Early_Blight": "Tizón temprano del tomate. Manchas concéntricas en hojas viejas.",
+  "Tomato_Late_Blight": "Tizón tardío del tomate. Manchas acuosas, grave y contagiosa.",
+  "Tomato_Leaf_Mold": "Moho foliar del tomate. Manchas amarillas con moho oliva.",
+  "Tomato_Septoria_Leaf_Spot": "Mancha septoriosa del tomate. Pequeñas manchas circulares.",
+  "Tomato_Spider_Mites_Two_Spotted_Spider_Mite": "Araña roja del tomate. Punteado amarillo y telarañas.",
+  "Tomato_Target_Spot": "Mancha objetivo del tomate. Lesiones concéntricas.",
+  "Tomato_Yellow_Leaf_Curl_Virus": "Virus del rizado amarillo del tomate. Transmitido por mosca blanca.",
+  "Tomato_Mosaic_Virus": "Virus del mosaico del tomate. Moteado verde claro/oscuro.",
+  "Tomato_Healthy": "Tomate saludable. Hojas verdes y vigorosas."
+};
+
+const TRATAMIENTOS = {
+  "Resultado_poco_confiable": NO_RECONOCIDA_TRAT,
+  "Apple_Scab": "Aplica fungicida de cobre cada 7-14 días. Poda ramas afectadas y elimina hojas caídas.",
+  "Apple_Black_Rot": "Elimina frutos momificados y ramas muertas. Aplica fungicida en primavera.",
+  "Apple_Rust": "Elimina enebros cercanos (huésped alternativo). Aplica fungicida en primavera.",
+  "Apple_Healthy": "Mantén riego moderado y fertilización balanceada. Poda anual.",
+  "Cherry_Powdery_Mildew": "Aplica azufre o bicarbonato de potasio. Poda para mejorar ventilación.",
+  "Cherry_Healthy": "Riego regular y fertilización con nitrógeno en primavera.",
+  "Corn_Gray_Leaf_Spot": "Rota cultivos cada 2 años. Aplica fungicida foliar preventivo.",
+  "Corn_Common_Rust": "Usa variedades resistentes. Aplica fungicida a base de azufre.",
+  "Corn_Northern_Leaf_Blight": "Rotación de cultivos. Aplica fungicida foliar.",
+  "Corn_Healthy": "Fertilización balanceada especialmente nitrógeno.",
+  "Grape_Black_Rot": "Elimina racimos momificados. Aplica fungicida preventivo.",
+  "Grape_Black_Measles": "Poda hasta madera sana. Mantén la vid vigorosa.",
+  "Grape_Leaf_Blight_Isariopsis_Leaf_Spot": "Elimina hojas infectadas. Mejora ventilación.",
+  "Grape_Healthy": "Poda adecuada y riego moderado.",
+  "Orange_Rotten": "Sin cura. Controla el vector (Diaphorina citri). Elimina árboles infectados.",
+  "Peach_Bacterial_Spot": "Aplica cobre en otoño e invierno. Poda para ventilación.",
+  "Peach_Healthy": "Fertilización y poda anual.",
+  "Pepper_Bell_Bacterial_Spot": "Usa semillas certificadas. Aplica cobre. Rota cultivos.",
+  "Pepper_Bell_Healthy": "Riego regular y fertilización completa.",
+  "Potato_Early_Blight": "Rota cultivos por 3-4 años. Aplica fungicida preventivo como clorotalonil.",
+  "Potato_Late_Blight": "Aplica fungicida sistémico URGENTE. Elimina plantas infectadas.",
+  "Potato_Healthy": "Usa semilla certificada. Mantén riego controlado.",
+  "Soybean_Healthy": "Aplica fósforo y potasio según análisis de suelo.",
+  "Strawberry_Leaf_Scorch": "Elimina hojas viejas y enfermas. Mantén suelo seco.",
+  "Strawberry_Healthy": "Renueva plantas cada 2-3 años. Fertilización con fósforo.",
+  "Tomato_Bacterial_Spot": "Usa semillas certificadas. Aplica cobre. Rota cultivos por 2 años.",
+  "Tomato_Early_Blight": "Aplica fungicida preventivo (mancozeb). Poda hojas inferiores.",
+  "Tomato_Late_Blight": "Aplica fungicida sistémico (metalaxil). Elimina plantas afectadas.",
+  "Tomato_Leaf_Mold": "Mejora ventilación en invernadero. Reduce humedad relativa.",
+  "Tomato_Septoria_Leaf_Spot": "Elimina hojas infectadas. Aplica fungicida de cobre.",
+  "Tomato_Spider_Mites_Two_Spotted_Spider_Mite": "Aplica acaricida o jabón potásico. Aumenta humedad.",
+  "Tomato_Target_Spot": "Aplica fungicida. Mejora drenaje del suelo.",
+  "Tomato_Yellow_Leaf_Curl_Virus": "Controla mosca blanca con trampas amarillas. Usa mallas antiáfidos.",
+  "Tomato_Mosaic_Virus": "Elimina plantas infectadas. Desinfecta herramientas.",
+  "Tomato_Healthy": "Realiza poda semanal de chupones. Riego constante sin encharcar."
+};
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+
+function fmt(s) {
+  return s ? s.replace(/_/g, ' ') : 'Desconocido';
+}
+
+function desc(clase, sana) {
+  if (clase === 'Resultado_poco_confiable') return DESCRIPCIONES[clase];
+  return DESCRIPCIONES[clase] || (sana ? 'Tu planta está saludable. Sin signos visibles de enfermedad.' : 'Se detectó una posible enfermedad en la planta.');
+}
+
+function trat(clase) {
+  return TRATAMIENTOS[clase] || 'Consulta con un agrónomo para un diagnóstico y tratamiento preciso.';
+}
+
+function icono(clase) {
+  if (clase === 'Resultado_poco_confiable') return '❓';
+  if (!clase) return '🌿';
+  const c = clase.toLowerCase();
+  if (c.includes('apple')) return '🍎';
+  if (c.includes('blueberry')) return '🫐';
+  if (c.includes('cherry')) return '🍒';
+  if (c.includes('corn') || c.includes('maize')) return '🌽';
+  if (c.includes('grape')) return '🍇';
+  if (c.includes('orange') || c.includes('citrus')) return '🍊';
+  if (c.includes('peach')) return '🍑';
+  if (c.includes('pepper') || c.includes('bellpepper')) return '🌶️';
+  if (c.includes('potato')) return '🥔';
+  if (c.includes('raspberry')) return '🍇';
+  if (c.includes('soybean')) return '🫘';
+  if (c.includes('squash')) return '🎃';
+  if (c.includes('strawberry')) return '🍓';
+  if (c.includes('tomato')) return '🍅';
+  if (c.includes('banana')) return '🍌';
+  if (c.includes('carrot')) return '🥕';
+  if (c.includes('coffee')) return '☕';
+  if (c.includes('rice')) return '🌾';
+  if (c.includes('wheat')) return '🌾';
+  return '🌿';
+}
+
+function nivelConfianza(pct) {
+  if (pct >= 85) return { text: 'Alta confianza', cls: 'high', color: 'conf-high' };
+  if (pct >= 65) return { text: 'Media confianza', cls: 'med', color: 'conf-med' };
+  return { text: 'Baja confianza', cls: 'low', color: 'conf-low' };
+}
+
+// ============================================
+// FUNCIÓN PRINCIPAL (CORREGIDA)
+// ============================================
+
+function mostrar() {
+  var p = new URLSearchParams(window.location.search);
+  var clase = p.get('clase') || 'Desconocido';
+  var confianza = parseFloat(p.get('confianza') || '0');
+  var sana = (p.get('es_sana') || 'false').toLowerCase() === 'true';
+  
+  // ✅ CORRECCIÓN CRÍTICA:
+  // confianza YA VIENE como porcentaje (0-100) desde backend
+  // NO multiplicar por 100 otra vez
+  var pct = Math.min(100, Math.max(0, Math.round(confianza)));
+  var pctFixed = Math.min(100, Math.max(0, confianza)).toFixed(1);
+  
+  var nombre = fmt(clase);
+  var des = desc(clase, sana);
+  var tratamiento = trat(clase);
+  var ico = icono(clase);
+  var nivel = nivelConfianza(pct);
+  
+  // Determinar clase de estilo
+  var statusClass = 'healthy';
+  var statusText = '✓ Saludable';
+  if (clase === 'Resultado_poco_confiable') {
+    statusClass = 'low-confidence';
+    statusText = '⚠ Poco confiable';
+  } else if (!sana) {
+    statusClass = 'diseased';
+    statusText = '⚠ Enfermedad detectada';
+  }
+  
+  // Generar HTML
+  var html = `
+    <div class="result-main ${statusClass}">
+      <div class="result-header">
+        <div class="result-icon ${statusClass}">${ico}</div>
+        <div>
+          <div class="result-pct ${statusClass}">${pctFixed}%</div>
+          <span class="result-status ${statusClass}">${statusText}</span>
+        </div>
+      </div>
+      <div class="conf-bar">
+        <div class="conf-fill ${nivel.cls}" style="width: ${pct}%;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-top: 4px;">
+        <span class="${nivel.color}" style="font-weight: 600;">${nivel.text}</span>
+        <span style="color: var(--muted);">${pct}% de certeza</span>
+      </div>
+      <div class="result-name">${nombre}</div>
+      <div class="result-desc">${des}</div>
+    </div>
+    <div class="result-section">
+      <h6><i class="fas fa-prescription-bottle"></i> Recomendaciones</h6>
+      <div class="rec-list">
+        <div class="rec-item">
+          <span class="rec-icon">💊</span>
+          <div class="rec-text">
+            <strong>Tratamiento recomendado</strong>
+            <span>${tratamiento}</span>
+          </div>
+        </div>
+        <div class="rec-item">
+          <span class="rec-icon">📋</span>
+          <div class="rec-text">
+            <strong>Próximo paso</strong>
+            <span>Guarda este diagnóstico en tu historial y monitorea la evolución de la planta.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('resultContainer').innerHTML = html;
+}
+
+// Ejecutar cuando la página esté lista
+document.addEventListener('DOMContentLoaded', mostrar);
+</script>
+</body>
+</html>

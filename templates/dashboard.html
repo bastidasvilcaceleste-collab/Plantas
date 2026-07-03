@@ -179,7 +179,7 @@
               <span class="hb-name">{{ c.replace('_',' ').replace('Corn (maize)','Maíz').replace('Pepper, bell','Pimiento').replace('Cherry (including sour)','Cereza').title() }}</span>
               <span class="hb-count">{{ cnt }}</span>
             </div>
-            <div class="hb-track"><div class="hb-fill" style="width:{{ (cnt / max_count * 100)|round }}%;background:var(--primary)"></div></div>
+            <div class="hb-track"><div class="hb-fill" data-pct="{{ (cnt / max_count * 100)|round }}"></div></div>
           </div>
           {% endfor %}
           {% if not cultivos_dict %}
@@ -253,7 +253,7 @@
               <td>
                 <div class="cnf-bar">
                   <span class="cnf-val">{{ (item.confianza*100)|round(1) }}%</span>
-                  <div class="cnf-track"><div class="cnf-fill" style="width:{{ (item.confianza*100)|round(1) }}%"></div></div>
+                  <div class="cnf-track"><div class="cnf-fill" data-pct="{{ (item.confianza*100)|round(1) }}"></div></div>
                 </div>
               </td>
               <td style="color:var(--muted);font-size:0.82rem">{{ item.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
@@ -312,8 +312,10 @@
 </main>
 
 <script>
-document.querySelectorAll('.cnf-fill').forEach(function(el){
-  var w = parseFloat(el.style.width);
+document.querySelectorAll('.cnf-fill, .hb-fill').forEach(function(el){
+  var w = el.hasAttribute('data-pct')
+    ? parseFloat(el.getAttribute('data-pct'))
+    : parseFloat(el.style.width);
   el.style.width = (isFinite(w) ? Math.max(0, Math.min(w, 100)) : 0) + '%';
 });
 

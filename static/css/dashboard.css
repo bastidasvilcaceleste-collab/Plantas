@@ -584,7 +584,7 @@ body {
 .hbar-item .hb-label .hb-name { font-weight: 600; }
 .hbar-item .hb-label .hb-count { color: var(--muted); }
 .hbar-item .hb-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.hbar-item .hb-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.hbar-item .hb-fill { height: 100%; border-radius: 3px; background: var(--primary); transition: width .6s ease; }
 
 /* Activity list */
 .activity-item {
